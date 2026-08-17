@@ -16,6 +16,15 @@ This documents the identity system already live on my portfolio (johnandrei.verc
 | Text (near-white) | `#e6edf3` | ⬜ |
 | Accent (main) | `#8b5cf6` | 🟣 |
 | Surface (card background, a step off pure black) | `#0d1117` | ⬛ |
+| Second accent (cyan) | `#22d3ee` | 🔵 |
+
+**Correction, found by re-reading `index.css` instead of my own notes.** I wrote
+this kit claiming one accent. There are two: the card border-glow blends
+`#8b5cf6 → #22d3ee → #a78bfa`, so cyan is live on every card edge on the site.
+Two accents isn't wrong — violet leads, cyan only ever appears inside a gradient,
+never on its own — but a kit that under-reports what's shipping isn't a kit, it's
+a wish. Documented rather than quietly deleted, because the drift is the lesson:
+this is exactly how a "system" stops matching the site it describes.
 
 Four colors, one accent used sparingly — for links, the cursor glow, and selection highlight — so the project screenshots and numbers stay the loudest thing on the page, not the UI.
 
