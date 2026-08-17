@@ -86,8 +86,9 @@ similarity is the angle between them — closer angle, closer meaning.
 
 ## Still ugly — the list I already know about
 
-1. **There is no photo of me anywhere on the site.** The About section is text
-   next to a chatbot. A hiring manager can't put a face to the work.
+1. ~~**There is no photo of me anywhere on the site.**~~ **Fixed.** Real 400×400
+   photo, top of the About section, next to my name and role. Real, not
+   generated — the rule my curation doc set for anything that is me.
 2. **The zeref-bot index is stale right now.** `npm run index` is a manual step
    and I just changed `data.js`, so the bot doesn't know about the FlyRank
    project yet. Worse, it fails silently — the bot answers confidently from the

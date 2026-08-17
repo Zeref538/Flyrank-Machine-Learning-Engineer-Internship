@@ -33,4 +33,11 @@ Neither rejection is about polish or taste — both are about whether the image 
 
 **My rule:** anything that is *me* gets a real photo, never a generated one — a generated face would undercut the exact "I show real, verifiable work" claim my whole portfolio proof statement rests on.
 
-**Honest gap:** I currently have **no photo of myself anywhere in the repo** — no headshot on the About section, no avatar. That's not a curation choice, it's a missing asset. Fixing it means taking or picking one real, plain photo (not generated) and adding it to `src/data.js` → `profile`. Until then, the About section correctly has no face rather than a fake one.
+**Closed.** The photo is in: `public/john-andrei-martinez.jpg`, a real 400×400
+crop, wired into `profile.photo` and shown at the top of the About section. It's
+a real photo, not generated — which was the rule, and the rule held. The accent
+colour touches it only as a thin ring, so the face stays the loudest thing in
+that block instead of the styling around it.
+
+*What the gap said before it was fixed, kept for the record:* I currently have
+**no photo of myself anywhere in the repo** — no headshot on the About section, no avatar. That's not a curation choice, it's a missing asset. Fixing it means taking or picking one real, plain photo (not generated) and adding it to `src/data.js` → `profile`. Until then, the About section correctly has no face rather than a fake one.
