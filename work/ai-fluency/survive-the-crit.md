@@ -107,11 +107,23 @@ The site already had an `@media (hover: none)` block — a CSS rule that only
 applies on devices where hovering isn't real — but it only switched off the zoom
 animations, not the overlay or the nav labels.
 
-## Status
+## Status — all four must-fixes are live
 
-The fixes for all four are written and verified in a local build (job title
-locked to one, tagline rewritten around the honest-validation result, hover
-overlay and nav labels disabled on touch). They are **not on the live site yet**
-— I stopped short of deploying so I could decide on the hero copy myself rather
-than have it rewritten for me. This log gets the before/after evidence and the
-commit hash once they ship.
+Commit `ebee2c5` in the portfolio repo, deployed to https://johnandrei.vercel.app and
+verified against the live server, not the local build.
+
+| # | Must-fix | What changed | Evidence |
+|---|---|---|---|
+| 1 | Three rotating job titles | One fixed title, "Machine Learning Engineer". The rotation now carries what the role means, at a smaller size below it, so it cannot compete with the title | live hero |
+| 2 | Tagline listed fields, gave no evidence | Rewritten around the honest-validation result: Precision@50 fell 0.72 to 0.52 on unseen clients and lost to a five-line rule, published anyway | live hero, and now the share-preview text too |
+| 3 | Projects trapped scrolling on a phone | The card detail panel no longer opens on a latched touch-hover, inside `@media (hover: none)` | `src/index.css`, end of file |
+| 4 | Nav looked broken on a phone | Same cause. A tapped icon kept its label stuck open; disabled where hover is not real | same block |
+
+On #4 I checked the complaint before believing it. Yesterday's mobile nav fix *is*
+live — I pulled the deployed stylesheet off the server and searched it — and at
+360px wide the bar ends at 351px inside a 359px container, so the geometry was
+never the problem. The stuck label was.
+
+I also nearly shipped the wrong fix for #3. My first instinct was that the panel
+needed a scroll guard. The actual cause is that a phone fakes a hover on tap and
+leaves it latched, so the panel should not appear at all there.
