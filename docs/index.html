@@ -107,11 +107,11 @@
     held-out set the best model reached Precision@50 of 0.88 against a base rate of 0.551,
     and the hand-written rule reached 0.86. That two-point gap sits inside a noise band of
     0.76–0.92 that the rule alone moves through purely from how tied scores are broken, so
-    the honest reading is that the model did not beat the rule. The result I would defend
-    hardest is a negative one: splitting the same data by row instead of by client inflates
-    ROC-AUC from 0.618 to 0.728, an advantage that held in 8 of 8 random draws, which means
-    a validation choice most people never think about is worth more than every modelling
-    decision in this project put together.</p>
+    the honest reading is that the model did not beat the rule. Two negative results
+    outweigh the ranking itself: splitting by row rather than by client inflates ROC-AUC from
+    0.618 to 0.728 in 8 of 8 random draws, and the label turns out to be exactly
+    reconstructible from two columns that no guidance bans, which lift the same model to
+    0.992 and would have handed me a spectacular, worthless result.</p>
   </div>
 
   <div class="toc">
@@ -183,6 +183,22 @@
     <tr><td><code>avg_position &lt;= 20</code></td><td>Past position 20 the fix is not a content refresh</td></tr>
   </table>
 
+  <h3>Date windows</h3>
+
+  <p>Worth stating plainly, because it constrains everything: <strong>this snapshot carries no
+  calendar dates at all.</strong> There is no <code>report_date</code> column. Every window is
+  relative to the moment the extract was taken — <code>*_90d</code> totals for the trailing
+  ninety days, and a <code>*_last_30d</code> versus <code>*_prev_30d</code> pair splitting the
+  most recent sixty of those days in half. Page-level time is relative too:
+  <code>content_age_days</code> spans 90–564 days and <code>days_since_last_update</code> spans
+  1–373.</p>
+
+  <p>The practical consequence is that this work cannot say anything about a specific month, and
+  cannot be re-run "as of" an earlier date. Anything time-aware needs the warehouse release,
+  where <code>report_date</code> exists and runs 2025-01-27 to 2026-06-30.</p>
+
+  <h3>What was excluded</h3>
+
   <p>That leaves <strong>13,562 eligible pages across 29 clients</strong>. The gate is a
   survivorship filter and I name it here rather than burying it: everything in this paper
   describes pages that already get meaningful search traffic. Pages nobody finds are a
@@ -194,6 +210,13 @@
     which is itself computed from <code>trend_pct</code>. Both of those columns are
     therefore permanently banned as features — using either is not a modelling choice, it
     is asking the model what the answer is. Section 3 shows what happens when you do.</p>
+    <p><strong>Four more columns are excluded for the same reason, and this is the part the
+    documentation does not tell you.</strong> <code>impressions_last_30d</code>,
+    <code>impressions_prev_30d</code> and their click and session equivalents are the raw
+    ingredients the trend is computed from. I checked rather than assumed, and the first pair
+    reconstructs <code>trend_pct</code> exactly — correlation <strong>1.0000</strong>, with
+    <strong>100% of 26,612 rows</strong> matching to within 0.6 percentage points:</p>
+    <pre style="margin:.7rem 0 0"><code>trend_pct == (impressions_last_30d - impressions_prev_30d) / impressions_prev_30d * 100</code></pre>
   </div>
 
   <h2 id="method">Methodology</h2>
@@ -243,13 +266,20 @@ score         = ctr_gap_ratio + freshness</code></pre>
   nowhere in training. It is asserted in code, not assumed:</p>
   <pre><code>assert not (set(train_clients) &amp; set(test_clients)), "clients leaked across the split"</code></pre>
 
-  <h3>Leakage check</h3>
-  <p>A validation harness that has never caught anything is not evidence of clean data —
-  it is an untested smoke alarm. So I deliberately broke it: I added
-  <code>trend_pct</code>, the banned label-derived column, back into the features and
-  re-ran. ROC-AUC went to <strong>1.000</strong>, with that single column taking
-  <strong>0.999</strong> of the model's feature importance. The alarm works, which is what
-  makes the honest 0.618 believable as a measurement rather than a hope.</p>
+  <h3>Leakage check, in two parts</h3>
+
+  <p>A validation harness that has never caught anything is not evidence of clean data — it
+  is an untested smoke alarm. So I deliberately broke it: I put <code>trend_pct</code>, the
+  banned label-derived column, back into the features and re-ran. ROC-AUC went to
+  <strong>1.000</strong>, with that single column taking <strong>0.999</strong> of the
+  model's feature importance. The alarm works, which is what makes the honest 0.618
+  believable as a measurement rather than a hope.</p>
+
+  <p>Then I asked a second question, which turned out to matter more: <em>is there another
+  way to reach the label?</em> The guidance names two columns to avoid. But a label is
+  computed from something, and those ingredients are usually still sitting in the table under
+  different names. So I tried to rebuild <code>trend_pct</code> from the 30-day windows, and
+  it came out exact — correlation 1.0000 across 26,612 rows. The result is in section 4.</p>
 
   <h2 id="results">Results</h2>
 
@@ -279,19 +309,28 @@ score         = ctr_gap_ratio + freshness</code></pre>
   <table>
     <tr><th>Method</th><th>P@10</th><th>P@20</th><th>P@50</th><th>ROC-AUC</th></tr>
     <tr><td>base rate (pick at random)</td><td class="num">0.551</td><td class="num">0.551</td><td class="num">0.551</td><td class="num">0.500</td></tr>
-    <tr><td>hand-written rule</td><td class="num">0.90</td><td class="num">0.95</td><td class="num">0.86</td><td class="num">0.582</td></tr>
+    <tr><td>hand-written rule</td><td class="num">0.90</td><td class="num">0.95</td><td class="num">0.86</td><td class="num">0.578</td></tr>
     <tr><td>logistic regression</td><td class="num">0.80</td><td class="num">0.80</td><td class="num">0.78</td><td class="num">0.639</td></tr>
     <tr><td>decision tree</td><td class="num">0.70</td><td class="num">0.50</td><td class="num">0.50</td><td class="num">0.616</td></tr>
-    <tr><td>random forest</td><td class="num">0.70</td><td class="num">0.85</td><td class="num">0.76</td><td class="num">0.643</td></tr>
+    <tr><td>random forest</td><td class="num">0.70</td><td class="num">0.70</td><td class="num">0.78</td><td class="num">0.623</td></tr>
     <tr><td><strong>gradient boosting</strong></td><td class="num">0.90</td><td class="num">0.90</td><td class="num"><strong>0.88</strong></td><td class="num">0.618</td></tr>
   </table>
+
+  <p style="font-size:.9rem;color:var(--muted)">Every figure in this table is produced by
+  <code>capstone.ipynb</code>, which is the single source of truth for the paper. An earlier
+  run in <code>w05_model.ipynb</code> reported the rule at ROC-AUC 0.582 and the random forest
+  at 0.643 — the same experiment with slightly different forest settings and a different
+  tie-break order. The differences are small and in both directions, and I am naming them
+  rather than quietly picking whichever looked better.</p>
 
   <div class="callout">
     <span class="lbl">The result I did not want</span>
     <p>Gradient boosting beats the rule at Precision@50 by 0.02 — and loses to it at
     Precision@20 by 0.05. Before celebrating either, I measured how much the rule's own
     score moves when nothing changes except the order of tied pages: re-running with random
-    tie-breaking puts its Precision@50 anywhere between <strong>0.76 and 0.92</strong>.</p>
+    tie-breaking puts its Precision@50 anywhere between <strong>0.76 and 0.92</strong>. A second,
+    independent re-measurement in <code>capstone.ipynb</code> — 200 fresh random tie-breaks —
+    landed at 0.76–0.90, which corroborates the band rather than contradicting it.</p>
     <p>A 0.02 gap inside a 0.16-wide noise band is not a win. Across 8 different grouped
     splits the model came out ahead in 6, with a mean margin of 0.056 — directionally
     positive, not conclusive. <strong>The honest claim is that the model did not
@@ -312,6 +351,41 @@ score         = ctr_gap_ratio + freshness</code></pre>
   <strong>24 of the top 50 queue slots</strong> — so nearly half the queue is not a content
   problem at all. It is usually broken click tracking, a bot-heavy query, or a page whose
   answer appears in the search snippet so nobody needs to click.</p>
+
+  <h3>The leak nothing warns you about</h3>
+
+  <figure>
+    <img src="figures/hidden_leak.png" alt="Bar chart: ROC-AUC 0.618 with clean features, 0.992 after adding two 30-day impression columns, 1.000 after adding trend_pct">
+    <figcaption>Same model, same grouped split, same held-out clients. Adding two columns that
+      appear on no ban list moves ROC-AUC from 0.618 to <strong>0.992</strong>, with
+      <code>impressions_last_30d</code> taking 0.579 of the feature importance.</figcaption>
+  </figure>
+
+  <p>The dataset documentation warns about two columns: <code>trend_direction</code> and
+  <code>trend_pct</code>. Ban those and you are told you are safe. You are not.
+  <code>trend_pct</code> is <em>computed</em> from the 30-day impression windows, and those
+  windows are still in the table:</p>
+
+  <pre><code>trend_pct == (impressions_last_30d - impressions_prev_30d) / impressions_prev_30d * 100
+
+correlation      1.0000
+rows matching    26,612 of 26,612  (within 0.6 percentage points)</code></pre>
+
+  <p>Both of those are ordinary-looking traffic columns. Nothing about the name
+  <code>impressions_last_30d</code> suggests danger, and a feature list built by reaching for
+  every available signal — which is the normal thing to do — picks them up without hesitation.
+  The model then scores <strong>0.992</strong>, which looks like a triumph and is worth
+  nothing: it has been handed the answer in two pieces and asked to do the subtraction.</p>
+
+  <p>This is a larger effect than the split-design one — <strong>+0.374 against +0.080</strong>
+  — and it is harder to catch, because the split problem at least has a name people teach. The
+  general lesson I would carry to any project: <strong>banning the label is not enough. Trace
+  how the label was computed, and ban its ingredients too.</strong> The cheap check is one line
+  of arithmetic against a candidate column, and it took me about a minute once I thought to
+  ask.</p>
+
+  <p>Everything reported in this paper uses the clean feature set. The 0.992 exists only in
+  this section, as a demonstration of what I avoided.</p>
 
   <h3>A negative result: content decay is not measurable here</h3>
 
@@ -354,6 +428,10 @@ score         = ctr_gap_ratio + freshness</code></pre>
       needs data this snapshot does not contain.</li>
     <li><strong>Effect sizes are small.</strong> ROC-AUC 0.618 against 0.5 for a coin flip.
       Real, modest, and reported as such.</li>
+    <li><strong>The leak I found is probably not the only one.</strong> I traced one label
+      back to its ingredients and found two columns. There are 44 columns here and I did not
+      test every one of them against the label; I tested the ones the trend arithmetic pointed
+      at.</li>
     <li><strong>Word count is missing for 4,081 eligible pages</strong>, and missingness
       tracks content type — so filling those with zero would inject a category signal
       disguised as a length signal.</li>
@@ -399,6 +477,13 @@ score         = ctr_gap_ratio + freshness</code></pre>
       depth and tracking setup; scores compare only inside one client.</li>
     <li><strong>Promising a traffic outcome.</strong> See the limitations.</li>
   </ol>
+
+  <figure>
+    <img src="figures/w07_precision_at_k.png" alt="Line chart of precision at K against the base rate, from K=10 to K=200">
+    <figcaption>How far down the queue is still worth reading. The edge over random order is
+      widest at the top and shrinks with depth — 0.88 at K=50, 0.735 by K=200 — which is what
+      makes this a triage aid rather than a list to work through end to end.</figcaption>
+  </figure>
 
   <h3>Cost and value</h3>
   <p>Reviewing the top 50 costs roughly 150 writer-hours at an assumed 3 hours per page —

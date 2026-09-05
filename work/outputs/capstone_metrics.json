@@ -1,0 +1,72 @@
+{
+  "lane": "2 - Refresh / Content Opportunity Scoring",
+  "split": "GroupShuffleSplit on client_id, test_size=0.3, random_state=42",
+  "eligible_pages": 13562,
+  "eligible_clients": 29,
+  "held_out_pages": 2955,
+  "held_out_clients": 9,
+  "base_rate": 0.551,
+  "results": [
+    {
+      "method": "base rate (random order)",
+      "P_at_10": 0.551,
+      "P_at_20": 0.551,
+      "P_at_50": 0.551,
+      "ROC_AUC": 0.5
+    },
+    {
+      "method": "hand-written rule",
+      "P_at_10": 0.9,
+      "P_at_20": 0.95,
+      "P_at_50": 0.86,
+      "ROC_AUC": 0.578
+    },
+    {
+      "method": "logistic_regression",
+      "P_at_10": 0.8,
+      "P_at_20": 0.8,
+      "P_at_50": 0.78,
+      "ROC_AUC": 0.639
+    },
+    {
+      "method": "decision_tree",
+      "P_at_10": 0.7,
+      "P_at_20": 0.5,
+      "P_at_50": 0.5,
+      "ROC_AUC": 0.616
+    },
+    {
+      "method": "random_forest",
+      "P_at_10": 0.7,
+      "P_at_20": 0.7,
+      "P_at_50": 0.78,
+      "ROC_AUC": 0.623
+    },
+    {
+      "method": "gradient_boosting",
+      "P_at_10": 0.9,
+      "P_at_20": 0.9,
+      "P_at_50": 0.88,
+      "ROC_AUC": 0.618
+    }
+  ],
+  "roc_auc_clean": 0.618,
+  "roc_auc_random_split": 0.728,
+  "split_design_cost": 0.11,
+  "roc_auc_with_hidden_leak": 0.992,
+  "hidden_leak_cost": 0.374,
+  "roc_auc_with_trend_pct": 1.0,
+  "rule_tie_band_p50": [
+    0.76,
+    0.9
+  ],
+  "archetype_counts": {
+    "no_clear_pattern": 1269,
+    "stuck_on_page_two": 635,
+    "zero_click_ghost": 388,
+    "visible_but_unclicked": 362,
+    "length_unknown": 215,
+    "short_for_its_class": 86
+  },
+  "top50_blocked_zero_click": 24
+}
