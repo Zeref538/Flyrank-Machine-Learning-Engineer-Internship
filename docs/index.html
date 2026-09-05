@@ -117,7 +117,7 @@
     difference at −0.260 to +0.140, an interval containing zero; splitting by row rather than
     by client inflates ROC-AUC from 0.618 to 0.728 in 8 of 8 draws, and the label proves exactly
     reconstructible from two columns no guidance bans, lifting the same model to 0.992; and a
-    difference-in-differences on 45,396 genuinely optimized pages from the 79-million-row
+    difference-in-differences on 13,233 genuinely optimized pages from the 79-million-row
     warehouse fails its own placebo test, because those pages were selected while already
     falling and recovered only to 97% of their own baseline, so this data cannot show
     optimization is why.</p>
@@ -165,6 +165,31 @@
   has real advantages a model does not: it explains itself, it fails in ways you can
   predict, and nobody has to trust it. A model has to earn its way past that, and the
   interesting finding is how hard that turned out to be.</p>
+
+  <h3>If you only take one thing from this paper</h3>
+
+  <p>Four findings follow and they are not equally strong, so here is my own ranking
+  rather than a flat list.</p>
+
+  <p><strong>Trust first:</strong> splitting the data by row instead of by client
+  inflates ROC-AUC from 0.618 to 0.728, and it does it in 8 of 8 random draws. That gap is
+  larger than the gap between any two models I tried. It is the finding I would defend
+  hardest, because it reproduces every time and it changes what you would do on Monday: get
+  the split right before tuning anything.</p>
+
+  <p><strong>Trust second:</strong> the label can be rebuilt exactly from two columns no
+  guidance bans — correlation 1.0000 across all 26,612 rows. That is arithmetic, not
+  inference, so it is not really open to argument.</p>
+
+  <p><strong>Believe, with the interval attached:</strong> the model did not beat the
+  hand-written rule. The point gap is +0.02, and a bootstrap over held-out clients puts it
+  between −0.260 and +0.140. That interval is wide because nine clients is not many. The
+  honest reading is not "the rule wins" — it is "this data cannot tell them apart", which
+  is still a reason to ship the rule, since the rule is free to explain and free to trust.</p>
+
+  <p><strong>Most interesting, least conclusive:</strong> the one causal test I could run
+  failed its own placebo. That failure is the finding. It is also the piece resting on the
+  most assumptions, and I would not build a business case on it.</p>
 
   <h2 id="data">Data</h2>
 
@@ -460,11 +485,15 @@ rows matching    26,612 of 26,612  (within 0.6 percentage points)</code></pre>
   changed, so anything seasonal cancels.</p>
 
   <table>
-    <tr><th>Estimate</th><th>Clicks per page / 30 days</th></tr>
-    <tr><td>naive difference-in-differences</td><td class="num">+1.84</td></tr>
-    <tr><td>matched on pre-period size, within client</td><td class="num">+2.75</td></tr>
-    <tr><td><strong>placebo, two pre-treatment windows</strong></td><td class="num"><strong>−0.71</strong> (should be 0)</td></tr>
+    <tr><th>Estimate</th><th>Clicks per page / 30 days</th><th>95% CI, clustered by client</th></tr>
+    <tr><td>naive difference-in-differences</td><td class="num">+1.84</td><td class="num">—</td></tr>
+    <tr><td>matched on pre-period size, within client</td><td class="num">+2.75</td><td class="num">+1.76 to +3.50</td></tr>
+    <tr><td><strong>placebo, two pre-treatment windows</strong></td><td class="num"><strong>−0.71</strong> (should be 0)</td><td class="num"><strong>−1.21 to −0.11</strong></td></tr>
   </table>
+
+  <p>The intervals come from resampling whole <em>clients</em> 2,000 times, the same
+  cluster bootstrap used on the ranking result and for the same reason: pages inside one
+  client are not independent draws.</p>
 
   <p>The first two look like a result: +2.75 clicks a page, positive in 61 of 66 strata and
   7 of 8 clients, p = 4×10⁻⁶. I believed it for about ten minutes.</p>
@@ -474,6 +503,20 @@ rows matching    26,612 of 26,612  (within 0.6 percentage points)</code></pre>
   two windows that are <em>both</em> before anything happened. It should return zero. It
   returned <strong>−0.71</strong> (p = 0.026): the treated pages were already falling relative
   to the controls before anyone touched them.</p>
+
+  <p>The interval is what settles it. The placebo's 95% CI is −1.21 to −0.11 — entirely
+  below zero, in 0 of 2,000 client resamples did it come back positive. So the
+  parallel-trends violation is not a small sample being noisy. It is solid, and it is
+  precisely what stops this design measuring anything.</p>
+
+  <p>The matched estimate's interval excludes zero too, and that is worth being explicit
+  about, because it is the sort of thing that gets quoted out of context. It rescues
+  nothing. A tight interval around a biased estimate is still centred on the wrong number:
+  a confidence interval measures noise, never the selection process that chose these pages
+  in the first place. Subtracting the pre-trend gives +3.46 (CI +2.52 to +4.15) and I am
+  not offering that as the answer either — it assumes the drift the placebo found would
+  have carried on in a straight line, which is the one thing regression to the mean
+  reliably does not do.</p>
 
   <figure>
     <img src="figures/mean_reversion.png" alt="Line chart of mean clicks per page across three consecutive 30-day windows; optimized pages fall then recover to 97% of their starting level while controls drift down">
@@ -511,8 +554,18 @@ rows matching    26,612 of 26,612  (within 0.6 percentage points)</code></pre>
       how the ranking behaves across the industries FlyRank serves.</li>
     <li><strong>The label is the dataset's definition of declining</strong>, not an
       independent measure of business harm.</li>
-    <li><strong>Survivorship.</strong> The eligibility gate keeps pages with 250+
-      impressions. Everything here describes content that already gets found.</li>
+    <li><strong>Survivorship &mdash; tested, not just admitted.</strong> The eligibility
+      gate keeps pages with 250+ impressions, so everything here describes content that
+      already gets found. Because every downstream number rests on that one threshold, I
+      swept it: 100, 250, 500, 1,000 and 2,000 impressions, each averaged over 8
+      client-grouped splits so the gate is not confounded with which clients land in the
+      test set. Eligible pages move from 15,091 down to 7,730 &mdash; roughly half &mdash;
+      and the model-minus-rule gap stays between +0.027 and +0.087, never once clearing the
+      0.10 mark, while the rule still wins outright in 1 to 3 of the 8 splits at every gate.
+      The conclusion is a property of the problem, not of the threshold I happened to pick.
+      Worth separating, though: both methods beat their base rate by a wide margin
+      (+0.16 to +0.27 on Precision@50). The ranking task is real. It is the model's edge
+      <em>over the rule</em> that the data will not support.</li>
     <li><strong>The zero-click population is unresolved.</strong> It is detected and routed
       away, not diagnosed. Distinguishing broken tracking from snippet-answered queries
       needs data this snapshot does not contain.</li>

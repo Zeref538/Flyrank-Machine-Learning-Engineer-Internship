@@ -18,7 +18,7 @@ interval on the difference of **−0.260 to +0.140** — an interval containing 
 | **Validation design beat every modelling choice** | Splitting by row instead of by client inflates ROC-AUC from 0.618 to 0.728, in 8 of 8 draws — a bigger gap than between any two models tried |
 | **A leak nothing warns you about** | `trend_pct` is exactly rebuildable from `impressions_last_30d` and `impressions_prev_30d` (correlation 1.0000, 26,612 rows). Using them takes ROC-AUC to 0.992 |
 | **The queue's first rule is a refusal** | 24 of the top 50 are pages with impressions and zero clicks — they rank high *because* zero clicks maxes out the CTR-gap term |
-| **The causal test failed its own placebo** | A difference-in-differences on 45,396 genuinely optimized warehouse pages gives +2.75 clicks — until the placebo shows those pages were already falling. They recovered to 97% of their own baseline, not above it |
+| **The causal test failed its own placebo** | A difference-in-differences on 13,233 genuinely optimized warehouse pages gives +2.75 clicks (95% CI +1.76 to +3.50) — until the placebo, which should return zero, comes back at −0.71 with a CI of −1.21 to −0.11, entirely below zero. Those pages were already falling. They recovered to 97% of their own baseline, not above it |
 
 #### Where things are
 

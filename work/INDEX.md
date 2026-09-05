@@ -44,7 +44,7 @@ carry self-checks that fail the run rather than printing a warning.
 | ML-11 | [docs/index.html](../docs/index.html) → [live](https://zeref538.github.io/flyrank-ml-internship/) | The deployed paper |
 | ML-12 | [w07_action_playbook.ipynb](notebooks/w07_action_playbook.ipynb) (closing cells) | Demo outline + two shareable cuts |
 | Capstone | [capstone.ipynb](notebooks/capstone.ipynb) | Mirrors the paper section for section; single source of truth |
-| Extension | [w08_warehouse_did.ipynb](notebooks/w08_warehouse_did.ipynb) | Before/after study on 45,396 optimized pages from the 79M-row warehouse; placebo test fails and says why |
+| Extension | [w08_warehouse_did.ipynb](notebooks/w08_warehouse_did.ipynb) | Before/after study on 13,233 optimized pages from the 79M-row warehouse; placebo test fails and says why |
 
 ### Receipts the paper's numbers trace to
 
@@ -53,6 +53,9 @@ carry self-checks that fail the run rather than printing a warning.
 | [w04_baseline_metrics.json](outputs/w04_baseline_metrics.json) | Baseline rule scores, eligible page count |
 | [w05_model_metrics.json](outputs/w05_model_metrics.json) | All five methods, tie noise band, 8-split margin |
 | [w07_playbook_metrics.json](outputs/w07_playbook_metrics.json) | Queue metrics, archetype counts, decay negative result |
+| [capstone_metrics.json](outputs/capstone_metrics.json) | Split, model-vs-rule, bootstrap interval, leak test |
+| [capstone_gate_sensitivity.json](outputs/capstone_gate_sensitivity.json) | The gate sweep: 5 thresholds x 8 splits |
+| [w08_did_metrics.json](outputs/w08_did_metrics.json) | DiD, placebo, and their client-clustered intervals |
 | [figures/](figures/) | The charts the paper embeds |
 
 The ranked queue CSV is deliberately **not** committed — it is derived client data,
@@ -126,13 +129,18 @@ and `work/**/*.csv` is in `.gitignore`. The notebook regenerates it.
    of by client inflated ROC-AUC from 0.618 to 0.728, in 8 of 8 random draws — a
    larger gap than between any two models I tried.
 2. **The model did not beat the rule.** Precision@50 of 0.88 vs 0.86, inside a
-   0.76–0.92 band the rule alone moves through from tie-breaking. Reported as a
+   0.76–0.92 band the rule alone moves through from tie-breaking, and a bootstrap over
+   held-out clients puts the difference at −0.260 to +0.140 — an interval containing zero.
+   It also survives moving the eligibility gate: sweeping it from 100 to 2,000 impressions
+   nearly halves the eligible pages and the gap never clears 0.10. Reported as a
    non-result rather than a two-point win.
 3. **The one causal test failed its own placebo, and that is the finding.** A
-   difference-in-differences on 45,396 really-optimized warehouse pages gives +2.75 clicks
-   per page — until the placebo shows the treated pages were already falling before anyone
-   touched them. They recovered to 97% of their own baseline, not above it. Pages that were
-   optimized recovered; the data cannot show optimization is why.
+   difference-in-differences on 13,233 really-optimized warehouse pages gives +2.75 clicks
+   per page (95% CI +1.76 to +3.50, clustered by client) — until the placebo, which should
+   return zero, comes back at −0.71 with a CI of −1.21 to −0.11. Entirely below zero, so
+   the parallel-trends violation is not noise. The treated pages were already falling before
+   anyone touched them, and they recovered to 97% of their own baseline, not above it. Pages
+   that were optimized recovered; the data cannot show optimization is why.
 4. **Nearly half the top of the queue should not be acted on.** 24 of the top 50 are
    pages with impressions and zero clicks — they rank high because zero clicks
    maximises the CTR-gap term. The queue's first rule is a refusal.

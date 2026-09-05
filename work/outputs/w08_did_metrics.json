@@ -8,6 +8,20 @@
   "matched_did_clicks": 2.75,
   "matched_strata_positive": "61/66",
   "placebo_did_clicks": -0.71,
+  "matched_did_ci95": [
+    1.76,
+    3.5
+  ],
+  "placebo_did_ci95": [
+    -1.21,
+    -0.11
+  ],
+  "did_minus_placebo": 3.46,
+  "did_minus_placebo_ci95": [
+    2.52,
+    4.15
+  ],
+  "bootstrap": "2000 resamples of whole clients (cluster bootstrap)",
   "placebo_p_value": 0.0258,
   "three_window_treated": [
     7.74,
