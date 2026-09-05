@@ -43,6 +43,8 @@ carry self-checks that fail the run rather than printing a warning.
 | ML-10 | [w07_action_playbook.ipynb](notebooks/w07_action_playbook.ipynb) | Ranked queue, archetypes, no-go list, cost/value |
 | ML-11 | [docs/index.html](../docs/index.html) → [live](https://zeref538.github.io/flyrank-ml-internship/) | The deployed paper |
 | ML-12 | [w07_action_playbook.ipynb](notebooks/w07_action_playbook.ipynb) (closing cells) | Demo outline + two shareable cuts |
+| Capstone | [capstone.ipynb](notebooks/capstone.ipynb) | Mirrors the paper section for section; single source of truth |
+| Extension | [w08_warehouse_did.ipynb](notebooks/w08_warehouse_did.ipynb) | Before/after study on 45,396 optimized pages from the 79M-row warehouse; placebo test fails and says why |
 
 ### Receipts the paper's numbers trace to
 
@@ -118,7 +120,7 @@ and `work/**/*.csv` is in `.gitignore`. The notebook regenerates it.
 
 ---
 
-## The three findings, if you are short on time
+## The findings, if you are short on time
 
 1. **Validation design outweighed every modelling choice.** Splitting by row instead
    of by client inflated ROC-AUC from 0.618 to 0.728, in 8 of 8 random draws — a
@@ -126,7 +128,12 @@ and `work/**/*.csv` is in `.gitignore`. The notebook regenerates it.
 2. **The model did not beat the rule.** Precision@50 of 0.88 vs 0.86, inside a
    0.76–0.92 band the rule alone moves through from tie-breaking. Reported as a
    non-result rather than a two-point win.
-3. **Nearly half the top of the queue should not be acted on.** 24 of the top 50 are
+3. **The one causal test failed its own placebo, and that is the finding.** A
+   difference-in-differences on 45,396 really-optimized warehouse pages gives +2.75 clicks
+   per page — until the placebo shows the treated pages were already falling before anyone
+   touched them. They recovered to 97% of their own baseline, not above it. Pages that were
+   optimized recovered; the data cannot show optimization is why.
+4. **Nearly half the top of the queue should not be acted on.** 24 of the top 50 are
    pages with impressions and zero clicks — they rank high because zero clicks
    maximises the CTR-gap term. The queue's first rule is a refusal.
 
