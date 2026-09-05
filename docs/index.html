@@ -8,7 +8,7 @@
 <link rel="canonical" href="https://zeref538.github.io/flyrank-ml-internship/">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Which page do you fix first?">
-<meta property="og:description" content="A learned ranker beat a five-line rule by 0.02 on Precision@50 — with a confidence interval of −0.26 to +0.14. Three negative results, on 30,000 pages and a 79-million-row warehouse.">
+<meta property="og:description" content="A learned ranker beat a five-line rule by 0.02 on Precision@50 — with a confidence interval of −0.26 to +0.14. Four negative results, on 30,000 pages and a 79-million-row warehouse.">
 <meta property="og:url" content="https://zeref538.github.io/flyrank-ml-internship/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -112,7 +112,7 @@
     held-out set the best model reached Precision@50 of 0.88 against a base rate of 0.551,
     and the hand-written rule reached 0.86. That two-point gap sits inside a noise band of
     0.76–0.92 that the rule alone moves through purely from how tied scores are broken, so
-    the honest reading is that the model did not beat the rule. Three negative results
+    the honest reading is that the model did not beat the rule. Four negative results
     outweigh the ranking itself: a bootstrap over held-out clients puts the model-minus-rule
     difference at −0.260 to +0.140, an interval containing zero; splitting by row rather than
     by client inflates ROC-AUC from 0.618 to 0.728 in 8 of 8 draws, and the label proves exactly
@@ -646,7 +646,7 @@ rows matching    26,612 of 26,612  (within 0.6 percentage points)</code></pre>
   </table>
 
   <p><code>capstone.ipynb</code> is the single source of truth. It runs top to bottom against
-  the committed CSV in about a minute, and ends with nine assertions that fail the run rather
+  the committed CSV in about a minute, and ends with ten assertions that fail the run rather
   than printing a warning — among them that no client appears on both sides of the split, that
   the leak test still detects a leak, and that the model-versus-rule gap is smaller than the
   tie-breaking noise band, so the paper cannot quietly start overclaiming if someone re-runs it
