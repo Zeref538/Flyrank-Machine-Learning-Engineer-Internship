@@ -410,8 +410,42 @@ score         = ctr_gap_ratio + freshness</code></pre>
   no clicks. The model learned the rule's blind spot and followed it. Across the whole
   held-out set, <strong>388 of 2,955 pages</strong> are in this state, and they occupy
   <strong>24 of the top 50 queue slots</strong> — so nearly half the queue is not a content
-  problem at all. It is usually broken click tracking, a bot-heavy query, or a page whose
-  answer appears in the search snippet so nobody needs to click.</p>
+  problem at all.</p>
+
+  <h3>What those zero-click pages actually are</h3>
+
+  <p>The obvious explanations are broken click tracking, bot-heavy queries, or a page whose
+  answer shows in the search snippet so nobody needs to click. I could have left it at that
+  list. But clicks and sessions in this dataset come from two different measurement systems
+  &mdash; Search Console counts search clicks, analytics counts arrivals &mdash; and
+  comparing them narrows it.</p>
+
+  <p>Across the eligible set, <strong>2,045 pages</strong> record zero search clicks in 90
+  days. <strong>Every one of them still records sessions</strong> &mdash; a median of 5, up
+  to 572 &mdash; and no page anywhere in the data has clicks without sessions. So in this
+  dataset a zero never means "nobody reaches this page".</p>
+
+  <p>That leaves two candidate explanations, and the data argues against both:</p>
+
+  <ul>
+    <li><strong>The arrivals are AI referrals, not search.</strong> Only 2.9% of zero-click
+      pages record any AI session, against 8.6% of pages that do have clicks. Lower, not
+      higher, so AI referral does not account for them.</li>
+    <li><strong>These pages genuinely repel searchers.</strong> Then they should convert
+      visibility into traffic worse than average. They convert it <em>better</em>: 7.43
+      sessions per 1,000 impressions against 5.80 for pages with recorded clicks.</li>
+  </ul>
+
+  <p>One more shape is worth noting. Among clients with 50 or more eligible pages, the
+  zero-click rate runs from <strong>4% to 55%</strong>. A page-quality story predicts a
+  broadly similar rate everywhere; a spread that wide and that client-shaped is what a
+  measurement or setup difference looks like.</p>
+
+  <p>What this does not do is prove the arrivals came from search &mdash; the snapshot has
+  no traffic-channel breakdown, so that stays out of reach. But the playbook's instruction
+  changes character. "Do not refresh, check tracking first" started as a hunch about a
+  suspicious pattern. It is now a refusal backed by a measurement contradiction sitting on
+  every one of those pages, and no amount of rewriting fixes a measurement problem.</p>
 
   <h3>The leak nothing warns you about</h3>
 
@@ -447,6 +481,45 @@ rows matching    26,612 of 26,612  (within 0.6 percentage points)</code></pre>
 
   <p>Everything reported in this paper uses the clean feature set. The 0.992 exists only in
   this section, as a demonstration of what I avoided.</p>
+
+  <h3>Then I stopped reasoning and swept everything</h3>
+
+  <p>Finding that leak by tracing the label's arithmetic worked, but it is not a method. It
+  is a hunch that happened to pay off, and "I checked where I thought to look" is not a
+  check. So every remaining column goes in one at a time, added to the clean feature set on
+  the same client-grouped split, and I record what each does to held-out ROC-AUC.</p>
+
+  <p>The sweep includes <code>trend_pct</code> and <code>trend_direction</code> as
+  <strong>planted positive controls</strong>. That matters more than it sounds: if the sweep
+  cannot flag the leak I already know about, then its silence on the other columns means
+  nothing. Both controls lift AUC by <strong>+0.382</strong>, so the instrument works.</p>
+
+  <p>It found a column I had missed. The four largest non-control lifts:</p>
+
+  <table>
+    <tr><th>Column added</th><th>ROC-AUC</th><th>Lift over clean</th></tr>
+    <tr><td><code>impressions_last_30d</code></td><td class="num">0.889</td><td class="num">+0.271</td></tr>
+    <tr><td><code>clicks_last_30d</code></td><td class="num">0.706</td><td class="num">+0.088</td></tr>
+    <tr><td><code>impressions_prev_30d</code></td><td class="num">0.699</td><td class="num">+0.080</td></tr>
+    <tr><td><code>sessions_last_30d</code></td><td class="num">0.644</td><td class="num">+0.025</td></tr>
+  </table>
+
+  <p>My earlier conclusion named two columns and said "ban these two". That was too small a
+  rule, and it would not have caught <code>clicks_last_30d</code>. All four of the worst
+  offenders belong to one family: the <code>last_30d</code> and <code>prev_30d</code>
+  columns, which describe the same two 30-day windows the label is computed over. Nothing
+  is special about any individual column. They leak because the label's measurement period
+  lives inside them.</p>
+
+  <p>So the rule that generalises is not a list of names:</p>
+
+  <p><strong>Ban anything measured over the window the label is measured over.</strong> A
+  list of column names is a patch for one dataset. That sentence is a rule you can carry to
+  the next one.</p>
+
+  <p>Honest boundary on this: the sweep is empirical, so it catches what moves the score. A
+  column that leaks only in combination with another, or too weakly to shift held-out AUC,
+  would pass it. A flag is strong evidence; the absence of one is weaker.</p>
 
   <h3>A negative result: content decay is not measurable here</h3>
 
@@ -566,15 +639,18 @@ rows matching    26,612 of 26,612  (within 0.6 percentage points)</code></pre>
       Worth separating, though: both methods beat their base rate by a wide margin
       (+0.16 to +0.27 on Precision@50). The ranking task is real. It is the model's edge
       <em>over the rule</em> that the data will not support.</li>
-    <li><strong>The zero-click population is unresolved.</strong> It is detected and routed
-      away, not diagnosed. Distinguishing broken tracking from snippet-answered queries
-      needs data this snapshot does not contain.</li>
+    <li><strong>The zero-click population is narrowed, not solved.</strong> I cannot show
+      what the arrivals were, because the snapshot carries no traffic-channel breakdown.
+      However, two of the three explanations are now ruled out on the data rather than by
+      assumption &mdash; see the diagnosis in the results section &mdash; so the playbook's
+      refusal to send a writer at these pages rests on evidence instead of a hunch.</li>
     <li><strong>Effect sizes are small.</strong> ROC-AUC 0.618 against 0.5 for a coin flip.
       Real, modest, and reported as such.</li>
-    <li><strong>The leak I found is probably not the only one.</strong> I traced one label
-      back to its ingredients and found two columns. There are 44 columns here and I did not
-      test every one of them against the label; I tested the ones the trend arithmetic pointed
-      at.</li>
+    <li><strong>The leak sweep is empirical, so it can only catch what moves the score.</strong>
+      Every column is now tested, not just the ones the trend arithmetic pointed at, and the
+      sweep proves it works by flagging a planted positive control. But a column that leaks
+      only in combination with another, or leaks too weakly to shift held-out AUC, would pass
+      it. Absence of a flag is weaker evidence than a flag.</li>
     <li><strong>Word count is missing for 4,081 eligible pages</strong>, and missingness
       tracks content type — so filling those with zero would inject a category signal
       disguised as a length signal.</li>
@@ -699,7 +775,7 @@ rows matching    26,612 of 26,612  (within 0.6 percentage points)</code></pre>
   </table>
 
   <p><code>capstone.ipynb</code> is the single source of truth. It runs top to bottom against
-  the committed CSV in about a minute, and ends with ten assertions that fail the run rather
+  the committed CSV in about a minute, and ends with fourteen assertions that fail the run rather
   than printing a warning — among them that no client appears on both sides of the split, that
   the leak test still detects a leak, and that the model-versus-rule gap is smaller than the
   tie-breaking noise band, so the paper cannot quietly start overclaiming if someone re-runs it

@@ -18,6 +18,7 @@ interval on the difference of **−0.260 to +0.140** — an interval containing 
 | **Validation design beat every modelling choice** | Splitting by row instead of by client inflates ROC-AUC from 0.618 to 0.728, in 8 of 8 draws — a bigger gap than between any two models tried |
 | **A leak nothing warns you about** | `trend_pct` is exactly rebuildable from `impressions_last_30d` and `impressions_prev_30d` (correlation 1.0000, 26,612 rows). Using them takes ROC-AUC to 0.992 |
 | **The queue's first rule is a refusal** | 24 of the top 50 are pages with impressions and zero clicks — they rank high *because* zero clicks maxes out the CTR-gap term |
+| **The leak rule that generalises** | Sweeping every column (with a planted positive control to prove the sweep works) found a third leaky column I had missed. All four worst offenders are `last_30d`/`prev_30d` columns — they leak because the label's measurement window lives inside them. The rule is not a list of names: ban anything measured over the window the label is measured over |
 | **The causal test failed its own placebo** | A difference-in-differences on 13,233 genuinely optimized warehouse pages gives +2.75 clicks (95% CI +1.76 to +3.50) — until the placebo, which should return zero, comes back at −0.71 with a CI of −1.21 to −0.11, entirely below zero. Those pages were already falling. They recovered to 97% of their own baseline, not above it |
 
 #### Where things are
@@ -33,7 +34,7 @@ interval on the difference of **−0.260 to +0.140** — an interval containing 
 | Paper URL, one line, as required | [`submission/paper_url.txt`](submission/paper_url.txt) |
 
 **Reproducing it:** `capstone.ipynb` runs top to bottom against the committed CSV in
-about a minute and ends with ten assertions that fail the run rather than printing a
+about a minute and ends with fourteen assertions that fail the run rather than printing a
 warning — among them that no client appears on both sides of the split, and that the
 model-versus-rule interval still contains zero. `w08_warehouse_did.ipynb` additionally
 needs gated Hugging Face access to the warehouse release.

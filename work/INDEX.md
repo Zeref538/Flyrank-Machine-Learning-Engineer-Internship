@@ -144,6 +144,18 @@ and `work/**/*.csv` is in `.gitignore`. The notebook regenerates it.
 4. **Nearly half the top of the queue should not be acted on.** 24 of the top 50 are
    pages with impressions and zero clicks — they rank high because zero clicks
    maximises the CTR-gap term. The queue's first rule is a refusal.
+5. **The leak rule that generalises.** Tracing the label's arithmetic found two leaky
+   columns. Sweeping *every* column — with `trend_pct` planted as a positive control, so a
+   silent sweep could not be mistaken for a clean one — found a third I had missed
+   (`clicks_last_30d`, +0.088 held-out AUC). All four worst offenders are `last_30d` /
+   `prev_30d` columns, leaking for one shared reason: the label's measurement window lives
+   inside them. The rule to carry forward is not a list of column names — it is *ban
+   anything measured over the window the label is measured over*.
+6. **The zero-click pages are a measurement contradiction, not bad content.** All 2,045 of
+   them still record sessions, none record clicks-without-sessions, they convert visibility
+   to traffic *better* than clicking pages (7.43 vs 5.80 per 1,000 impressions), and AI
+   referral is ruled out. The playbook's refusal to send a writer at them is now evidence,
+   not a hunch.
 
 ---
 
