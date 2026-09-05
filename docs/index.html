@@ -4,65 +4,486 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Which Page Do You Fix First? — John Andrei Martinez</title>
-<meta name="description" content="A research paper on ranking content pages for refresh review, built on the FlyRank ML Internship dataset.">
+<meta name="description" content="Ranking content pages for refresh review on 30,000 pages of real client search data, and testing honestly whether a learned model beats a five-line rule. Built on the FlyRank ML Internship dataset.">
+<link rel="canonical" href="https://zeref538.github.io/flyrank-ml-internship/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Which page do you fix first?">
+<meta property="og:description" content="A learned ranker beat a hand-written rule by 0.02 on Precision@50 — inside a noise band of 0.16. The honest answer is that it did not beat it.">
+<meta property="og:url" content="https://zeref538.github.io/flyrank-ml-internship/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#07090d; --surface:#0d1117; --border:#1e2733;
-    --text:#e6edf3; --muted:#8b98a9; --accent:#8b5cf6;
+    --bg:#07090d; --surface:#0d1117; --surface-2:#11161f; --border:#1e2733;
+    --text:#e6edf3; --muted:#8b98a9; --accent:#8b5cf6; --accent-2:#22d3ee;
+    --warn:#f0883e;
     --heading:"Sora",system-ui,sans-serif; --body:"Inter",system-ui,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
   }
   *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
   body{background:var(--bg);color:var(--text);font-family:var(--body);
-       line-height:1.7;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:720px;margin:0 auto;padding:clamp(2rem,6vw,5rem) 1.25rem}
-  h1{font-family:var(--heading);font-weight:700;font-size:clamp(1.7rem,4.5vw,2.6rem);
-     line-height:1.15;letter-spacing:-.02em}
-  h2{font-family:var(--heading);font-weight:500;font-size:1.05rem;margin-bottom:.4rem}
-  .byline{color:var(--muted);margin-top:1rem;font-size:.95rem}
-  .tag{display:inline-block;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;
-       color:var(--accent);border:1px solid var(--border);border-radius:99px;
-       padding:.25rem .7rem;margin-bottom:1.5rem}
-  .lede{color:var(--muted);margin-top:1.5rem;font-size:1.05rem}
-  hr{border:0;border-top:1px solid var(--border);margin:2.5rem 0}
-  ol{list-style:none;counter-reset:s}
-  li{counter-increment:s;border:1px solid var(--border);background:var(--surface);
-     border-radius:10px;padding:1rem 1.1rem;margin-bottom:.6rem}
-  li::before{content:counter(s);color:var(--accent);font-family:var(--heading);
-             font-size:.8rem;margin-right:.6rem}
-  li span{color:var(--muted);font-size:.9rem}
-  footer{margin-top:3rem;color:var(--muted);font-size:.85rem}
-  a{color:var(--accent)}
+       line-height:1.75;-webkit-font-smoothing:antialiased;font-size:17px}
+  .wrap{max-width:760px;margin:0 auto;padding:clamp(2rem,6vw,4.5rem) 1.25rem 6rem}
+
+  h1{font-family:var(--heading);font-weight:700;font-size:clamp(2rem,5.5vw,2.9rem);
+     line-height:1.15;letter-spacing:-.02em;margin-bottom:.7rem}
+  h2{font-family:var(--heading);font-weight:600;font-size:clamp(1.3rem,3.4vw,1.6rem);
+     margin:3.2rem 0 .9rem;letter-spacing:-.01em;scroll-margin-top:1rem}
+  h2::before{content:counter(sec) ". ";counter-increment:sec;color:var(--accent);font-size:.85em}
+  h3{font-family:var(--heading);font-weight:600;font-size:1.08rem;margin:1.9rem 0 .5rem;color:var(--text)}
+  body{counter-reset:sec}
+  h2.nonum::before{content:none}
+  p{margin-bottom:1.05rem;color:#cdd6e0}
+  strong{color:var(--text);font-weight:600}
+  a{color:var(--accent-2);text-decoration:none;border-bottom:1px solid rgba(34,211,238,.3)}
+  a:hover{border-bottom-color:var(--accent-2)}
+  hr{border:0;border-top:1px solid var(--border);margin:2.6rem 0}
+
+  .byline{color:var(--muted);font-family:var(--mono);font-size:.85rem;margin-bottom:1.6rem}
+  .lede{font-size:1.13rem;color:var(--muted);margin-bottom:1.8rem}
+  .tag{display:inline-block;font-family:var(--mono);font-size:.72rem;letter-spacing:.09em;
+       text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);
+       border-radius:999px;padding:.25rem .75rem;margin-bottom:1.1rem}
+
+  .abstract{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);
+            border-radius:10px;padding:1.3rem 1.4rem;margin:1.6rem 0 2rem}
+  .abstract p{margin-bottom:0}
+  .callout{background:var(--surface-2);border:1px solid var(--border);border-left:3px solid var(--warn);
+           border-radius:10px;padding:1.05rem 1.2rem;margin:1.5rem 0}
+  .callout p:last-child{margin-bottom:0}
+  .callout .lbl{font-family:var(--mono);font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
+                color:var(--warn);display:block;margin-bottom:.4rem}
+
+  table{width:100%;border-collapse:collapse;margin:1.3rem 0;font-size:.93rem;display:block;overflow-x:auto}
+  th,td{text-align:left;padding:.6rem .7rem;border-bottom:1px solid var(--border);white-space:nowrap}
+  th{font-family:var(--mono);font-size:.78rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+  td.num{font-variant-numeric:tabular-nums}
+  tr:last-child td{border-bottom:none}
+
+  figure{margin:1.9rem 0}
+  figure img{width:100%;border:1px solid var(--border);border-radius:10px;background:#fff}
+  figcaption{color:var(--muted);font-size:.87rem;margin-top:.6rem;line-height:1.6}
+
+  code{font-family:var(--mono);font-size:.87em;background:var(--surface-2);
+       border:1px solid var(--border);border-radius:5px;padding:.1rem .35rem;color:var(--accent-2)}
+  pre{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+      padding:1rem 1.1rem;overflow-x:auto;margin:1.2rem 0}
+  pre code{background:none;border:none;padding:0;color:#cdd6e0;font-size:.85rem;line-height:1.65}
+
+  ul,ol{margin:0 0 1.1rem 1.25rem;color:#cdd6e0}
+  li{margin-bottom:.5rem}
+
+  .toc{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+       padding:1.1rem 1.3rem;margin:2rem 0}
+  .toc ol{margin:0 0 0 1.1rem;font-size:.94rem}
+  .toc li{margin-bottom:.28rem}
+
+  footer{margin-top:4rem;padding-top:1.8rem;border-top:1px solid var(--border);
+         color:var(--muted);font-size:.9rem}
+  .credit{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+          padding:1.1rem 1.3rem;margin-bottom:1.4rem}
+  @media (max-width:560px){ body{font-size:16px} th,td{white-space:normal} }
 </style>
 </head>
 <body>
 <main class="wrap">
-  <span class="tag">Draft — in progress</span>
+
+  <span class="tag">FlyRank ML Internship · Capstone</span>
   <h1>Which page do you fix first?</h1>
-  <p class="byline">John Andrei Martinez · FlyRank ML Internship · Applied Search Intelligence</p>
-  <p class="lede">Ranking content pages for refresh review, and testing honestly whether a
-     learned ranking beats a transparent rule. This page is live and waiting for its
-     content — the sections below are the shape the finished paper will take.</p>
+  <p class="byline">John Andrei Martinez · Applied Search Intelligence lane · September 2026</p>
+  <p class="lede">Ranking content pages for refresh review on 30,000 pages of real client
+    search data — and testing honestly whether a learned model earns its place over a
+    five-line rule anyone can read.</p>
+
+  <div class="abstract">
+    <p><strong>Abstract.</strong> A content team can review perhaps fifty pages a month
+    out of a portfolio of thousands, so the practical question is not "which pages are
+    declining" but "which fifty do we look at first". I built a refresh-priority ranker on
+    the FlyRank internship dataset — 30,000 pseudonymised content items across 32 clients,
+    with trailing-90-day search metrics — comparing a five-line hand-written rule against
+    four models, all judged on the same clients none of them had ever seen. On that
+    held-out set the best model reached Precision@50 of 0.88 against a base rate of 0.551,
+    and the hand-written rule reached 0.86. That two-point gap sits inside a noise band of
+    0.76–0.92 that the rule alone moves through purely from how tied scores are broken, so
+    the honest reading is that the model did not beat the rule. The result I would defend
+    hardest is a negative one: splitting the same data by row instead of by client inflates
+    ROC-AUC from 0.618 to 0.728, an advantage that held in 8 of 8 random draws, which means
+    a validation choice most people never think about is worth more than every modelling
+    decision in this project put together.</p>
+  </div>
+
+  <div class="toc">
+    <strong>Contents</strong>
+    <ol>
+      <li><a href="#intro">The decision this supports</a></li>
+      <li><a href="#data">Data</a></li>
+      <li><a href="#method">Methodology</a></li>
+      <li><a href="#results">Results</a></li>
+      <li><a href="#limits">Limitations and honest framing</a></li>
+      <li><a href="#recs">Ranked recommendations</a></li>
+      <li><a href="#repro">Reproducibility</a></li>
+      <li><a href="#ack">Acknowledgments and data credit</a></li>
+    </ol>
+  </div>
 
   <hr>
 
+  <h2 id="intro">The decision this supports</h2>
+
+  <p>FlyRank's clients publish more content than anyone can maintain. Pages age, search
+  results shift underneath them, and traffic drifts down slowly enough that nobody notices
+  a specific page dying. The team's real constraint is not knowledge, it is hours: a
+  strategist has a limited number of review slots each month and thousands of candidate
+  pages.</p>
+
+  <p>So the question I set out to answer is narrow on purpose:</p>
+
+  <p><strong>Given a fixed number of review hours, which pages should a content team look
+  at first?</strong></p>
+
+  <p>Notice what that question does not ask. It does not ask whether refreshing a page
+  will recover its traffic. Nothing in this dataset can answer that, because nobody ran an
+  experiment where pages were assigned at random to be refreshed. The data is one snapshot
+  of what already happened. That distinction runs through the whole paper: everything here
+  is <em>decision support</em> — a better order to work through — and never a promise about
+  an outcome.</p>
+
+  <p>A second thing shapes the whole project. I started with a hand-written rule, before
+  any model, and kept it as the thing to beat. A rule a strategist can read in ten seconds
+  has real advantages a model does not: it explains itself, it fails in ways you can
+  predict, and nobody has to trust it. A model has to earn its way past that, and the
+  interesting finding is how hard that turned out to be.</p>
+
+  <h2 id="data">Data</h2>
+
+  <p><strong>Release:</strong> the FlyRank ML Internship starter dataset,
+  <code>content_refresh_anonymized.csv</code> — 30,000 rows and 44 columns, one row per
+  pseudonymised content item, 32 clients, with trailing-90-day search and analytics
+  metrics. Content and client identifiers are pseudonyms used only for grouping and
+  splitting; they are never features, and no client name, URL or query appears anywhere in
+  this paper or its repository.</p>
+
+  <p>I also queried the gated warehouse release for scale checks — a monthly partition of
+  <code>fact_content_daily_performance</code>, which holds 78,835,655 rows at
+  report_date × client × content grain. The modelling in this paper runs on the 30,000-row
+  snapshot, because iterating against the full table hits rate limits and buys nothing the
+  snapshot cannot answer.</p>
+
+  <h3>What was excluded, and why</h3>
+
+  <p>One eligibility gate, fixed before any modelling and applied identically to the rule
+  and every model:</p>
+
+  <table>
+    <tr><th>Filter</th><th>Reason</th></tr>
+    <tr><td><code>impressions_90d &gt;= 250</code></td><td>Below this, a "decline" is noise on a handful of views</td></tr>
+    <tr><td><code>avg_position &gt; 0</code></td><td>Zero means "no data" in this dataset, not rank zero — 1,205 rows</td></tr>
+    <tr><td><code>avg_position &lt;= 20</code></td><td>Past position 20 the fix is not a content refresh</td></tr>
+  </table>
+
+  <p>That leaves <strong>13,562 eligible pages across 29 clients</strong>. The gate is a
+  survivorship filter and I name it here rather than burying it: everything in this paper
+  describes pages that already get meaningful search traffic. Pages nobody finds are a
+  different problem and this work says nothing about them.</p>
+
+  <div class="callout">
+    <span class="lbl">The label trap</span>
+    <p>The target is <code>is_declining</code>, derived from <code>trend_direction</code>,
+    which is itself computed from <code>trend_pct</code>. Both of those columns are
+    therefore permanently banned as features — using either is not a modelling choice, it
+    is asking the model what the answer is. Section 3 shows what happens when you do.</p>
+  </div>
+
+  <h2 id="method">Methodology</h2>
+
+  <h3>Assumptions, stated so they can be argued with</h3>
+  <ul>
+    <li>A page whose click trend is measured as down is worth a human look. This is the
+      dataset's definition of the problem, not a claim that down means broken.</li>
+    <li>A click-through rate below the median for its own position tier indicates a
+      listing problem rather than a ranking problem.</li>
+    <li>Ninety days is long enough for a trend and short enough to still be true.</li>
+  </ul>
+
+  <h3>The baseline: a rule you can read</h3>
+  <p>Written before any model, deliberately simple. It scores a page on two terms — how far
+  its CTR sits below the median for its position tier, and how long since it was last
+  updated:</p>
+  <pre><code>tier_median   = median CTR of all pages in the same position tier
+ctr_gap_ratio = clip((tier_median - ctr) / tier_median, 0, 1)
+freshness     = min(days_since_last_update / 365, 1)
+score         = ctr_gap_ratio + freshness</code></pre>
+  <p>Two things about this. It is the thing to beat, not a strawman — I spent real effort
+  on it. And its blind spot is visible in the arithmetic: a page with zero clicks gets the
+  maximum possible <code>ctr_gap_ratio</code>, so pages nobody clicks float straight to the
+  top. That flaw comes back in the results.</p>
+
+  <h3>Features</h3>
+  <p>Fourteen columns, all knowable at prediction time: the two rule terms plus raw CTR,
+  average position, impressions, clicks, days since last update, content age, word count,
+  engagement rate, scroll rate, days with impressions, search volume and competition. No
+  identifiers. No label-derived columns.</p>
+
+  <p>One feature deserves a flag rather than silence: <code>days_with_impressions</code>
+  counts days the page was visible inside the same 90-day frame the trend is cut from, so
+  it sits closer to the label than anything else I kept. I kept it and I am naming it.</p>
+
+  <h3>Validation design — the part that mattered most</h3>
+
+  <p>Rows in this dataset are not independent. Pages belonging to one client share a CMS, a
+  publishing cadence, an audience and a tracking setup. If some of a client's pages are in
+  the training set and others in the test set, a model can learn "this is client 7, and
+  client 7's pages tend to decline" and score well without having learned anything about
+  content at all.</p>
+
+  <p>So the split is <code>GroupShuffleSplit</code> on <code>client_id</code>: 30% of
+  <em>clients</em> held out whole, giving 2,955 test pages from 9 clients that appear
+  nowhere in training. It is asserted in code, not assumed:</p>
+  <pre><code>assert not (set(train_clients) &amp; set(test_clients)), "clients leaked across the split"</code></pre>
+
+  <h3>Leakage check</h3>
+  <p>A validation harness that has never caught anything is not evidence of clean data —
+  it is an untested smoke alarm. So I deliberately broke it: I added
+  <code>trend_pct</code>, the banned label-derived column, back into the features and
+  re-ran. ROC-AUC went to <strong>1.000</strong>, with that single column taking
+  <strong>0.999</strong> of the model's feature importance. The alarm works, which is what
+  makes the honest 0.618 believable as a measurement rather than a hope.</p>
+
+  <h2 id="results">Results</h2>
+
+  <h3>The validation result, which outweighs everything else</h3>
+
+  <figure>
+    <img src="figures/validation_split.png" alt="Bar chart: ROC-AUC 0.728 with a random row split versus 0.618 with a client-grouped split">
+    <figcaption>Same model, same features, same data. Splitting by row lets 27 clients
+      appear on both sides of the split and returns ROC-AUC 0.728. Holding clients out
+      whole returns 0.618. Repeated across 8 random draws, the random split scored higher
+      <strong>8 times out of 8</strong>, mean gap +0.080.</figcaption>
+  </figure>
+
+  <p>Eight points of ROC-AUC is larger than the difference between any two models I tried.
+  A researcher who split by row would report a materially better result, in good faith,
+  having done nothing wrong that a tutorial warned them about. This is the finding I would
+  defend hardest, and it is a warning about method rather than a discovery about content.</p>
+
+  <h3>Model versus baseline, on the same held-out clients</h3>
+
+  <figure>
+    <img src="figures/model_vs_baseline.png" alt="Bar chart comparing the hand-written rule and gradient boosting at Precision@10, @20 and @50, with a shaded noise band from 0.76 to 0.92">
+    <figcaption>Both judged on the same 9 held-out clients, against a base rate of 0.551.
+      The shaded band is the range the rule alone moves through purely from tie-breaking.</figcaption>
+  </figure>
+
+  <table>
+    <tr><th>Method</th><th>P@10</th><th>P@20</th><th>P@50</th><th>ROC-AUC</th></tr>
+    <tr><td>base rate (pick at random)</td><td class="num">0.551</td><td class="num">0.551</td><td class="num">0.551</td><td class="num">0.500</td></tr>
+    <tr><td>hand-written rule</td><td class="num">0.90</td><td class="num">0.95</td><td class="num">0.86</td><td class="num">0.582</td></tr>
+    <tr><td>logistic regression</td><td class="num">0.80</td><td class="num">0.80</td><td class="num">0.78</td><td class="num">0.639</td></tr>
+    <tr><td>decision tree</td><td class="num">0.70</td><td class="num">0.50</td><td class="num">0.50</td><td class="num">0.616</td></tr>
+    <tr><td>random forest</td><td class="num">0.70</td><td class="num">0.85</td><td class="num">0.76</td><td class="num">0.643</td></tr>
+    <tr><td><strong>gradient boosting</strong></td><td class="num">0.90</td><td class="num">0.90</td><td class="num"><strong>0.88</strong></td><td class="num">0.618</td></tr>
+  </table>
+
+  <div class="callout">
+    <span class="lbl">The result I did not want</span>
+    <p>Gradient boosting beats the rule at Precision@50 by 0.02 — and loses to it at
+    Precision@20 by 0.05. Before celebrating either, I measured how much the rule's own
+    score moves when nothing changes except the order of tied pages: re-running with random
+    tie-breaking puts its Precision@50 anywhere between <strong>0.76 and 0.92</strong>.</p>
+    <p>A 0.02 gap inside a 0.16-wide noise band is not a win. Across 8 different grouped
+    splits the model came out ahead in 6, with a mean margin of 0.056 — directionally
+    positive, not conclusive. <strong>The honest claim is that the model did not
+    demonstrably beat a five-line rule.</strong> A team should ship the rule, because it
+    explains itself and costs nothing to maintain.</p>
+  </div>
+
+  <h3>Where the top of the queue actually goes wrong</h3>
+
+  <p>Precision@50 of 0.88 means 44 of the model's top 50 really were declining. The
+  interesting part is the other 6. Their median CTR is 0.000 and their median click count
+  is 0 — they are pages with impressions and no clicks at all.</p>
+
+  <p>The cause is mechanical. A page with zero clicks has no click trend that can decline,
+  and it receives the maximum <code>ctr_gap_ratio</code> precisely <em>because</em> it has
+  no clicks. The model learned the rule's blind spot and followed it. Across the whole
+  held-out set, <strong>388 of 2,955 pages</strong> are in this state, and they occupy
+  <strong>24 of the top 50 queue slots</strong> — so nearly half the queue is not a content
+  problem at all. It is usually broken click tracking, a bot-heavy query, or a page whose
+  answer appears in the search snippet so nobody needs to click.</p>
+
+  <h3>A negative result: content decay is not measurable here</h3>
+
+  <figure>
+    <img src="figures/w07_decay_by_staleness.png" alt="Bar chart of declining share by staleness bucket, each bar labelled with its page count and client count">
+    <figcaption>Every bar carries the number of clients it rests on. The 6-month bar is 17
+      pages from a single client.</figcaption>
+  </figure>
+
+  <p>I expected to show that pages left un-updated for longer are more likely to decline —
+  the finding that would justify a refresh schedule. It is not in this data, and the reason
+  is in the column itself. Two values of <code>days_since_last_update</code> cover
+  <strong>70%</strong> of eligible pages, and the median client has just
+  <strong>3 distinct values across all of its pages</strong> — one client has 4,760 pages
+  and 3 values. That is not what a per-page edit date looks like; it behaves like a
+  per-client crawl timestamp. Comparing pages on it mostly compares which client they
+  belong to. The range is also only 4 to 301 days, so there is nothing older than ten
+  months to compare against.</p>
+
+  <p>This has a consequence I would otherwise have missed: <code>freshness_term</code>, one
+  half of my own baseline rule, is built on that column. In a split that holds out whole
+  clients it carries almost no usable signal, and it should not be described as a freshness
+  signal anywhere.</p>
+
+  <h2 id="limits">Limitations and honest framing</h2>
+
+  <ul>
+    <li><strong>Cross-sectional, no intervention.</strong> One snapshot, nobody assigned
+      pages to be refreshed. This work can say "these look worth reviewing first". It can
+      never say "refreshing this will recover traffic".</li>
+    <li><strong>Nine held-out clients.</strong> Every headline number rests on that. Nine
+      is enough to expose the row-versus-client split effect and too few to characterise
+      how the ranking behaves across the industries FlyRank serves.</li>
+    <li><strong>The label is the dataset's definition of declining</strong>, not an
+      independent measure of business harm.</li>
+    <li><strong>Survivorship.</strong> The eligibility gate keeps pages with 250+
+      impressions. Everything here describes content that already gets found.</li>
+    <li><strong>The zero-click population is unresolved.</strong> It is detected and routed
+      away, not diagnosed. Distinguishing broken tracking from snippet-answered queries
+      needs data this snapshot does not contain.</li>
+    <li><strong>Effect sizes are small.</strong> ROC-AUC 0.618 against 0.5 for a coin flip.
+      Real, modest, and reported as such.</li>
+    <li><strong>Word count is missing for 4,081 eligible pages</strong>, and missingness
+      tracks content type — so filling those with zero would inject a category signal
+      disguised as a length signal.</li>
+  </ul>
+
+  <h2 id="recs">Ranked recommendations</h2>
+
+  <p>The output is a ranked queue where every page carries an <em>archetype</em>: a plain
+  pattern a person can confirm by looking at the page for a minute, mapped to one action
+  and one sentence of reasoning. A score of 0.93 is not something a writer can act on.</p>
+
+  <table>
+    <tr><th>Archetype</th><th>Pages</th><th>Action</th></tr>
+    <tr><td><code>zero_click_ghost</code></td><td class="num">388</td><td>DO NOT REFRESH — check tracking first</td></tr>
+    <tr><td><code>visible_but_unclicked</code></td><td class="num">362</td><td>Rewrite title and meta description</td></tr>
+    <tr><td><code>stuck_on_page_two</code></td><td class="num">635</td><td>Improve depth and internal links</td></tr>
+    <tr><td><code>length_unknown</code></td><td class="num">215</td><td>Analyst check — no word count on file</td></tr>
+    <tr><td><code>short_for_its_class</code></td><td class="num">86</td><td>Expand coverage</td></tr>
+    <tr><td><code>no_clear_pattern</code></td><td class="num">1,269</td><td>Manual look, no preset action</td></tr>
+  </table>
+
+  <h3>What a person must confirm before any page is touched</h3>
   <ol>
-    <li><h2>Abstract</h2><span>Question, method, result — in five sentences.</span></li>
-    <li><h2>Introduction</h2><span>The decision this work supports: which pages get the limited review slots.</span></li>
-    <li><h2>Data</h2><span>Release, tables, date windows, and what was excluded — public-safe throughout.</span></li>
-    <li><h2>Methodology</h2><span>Assumptions, features, label definition, baseline, and validation design.</span></li>
-    <li><h2>Results</h2><span>Model versus baseline on the same split, with charts.</span></li>
-    <li><h2>Limitations</h2><span>What this work observes, and what it can never claim.</span></li>
-    <li><h2>Ranked recommendations</h2><span>The action playbook, with reason codes.</span></li>
-    <li><h2>Reproducibility</h2><span>Links to every notebook and the repo.</span></li>
+    <li><strong>Tracking is alive</strong> — the page recorded at least one click.</li>
+    <li><strong>Demand is real</strong> — at least 500 impressions.</li>
+    <li><strong>Position is known</strong> — a real rank, not the 0 that means no data.</li>
+    <li><strong>The gap is measurable</strong> — CTR below its own tier's median.</li>
+  </ol>
+  <p>Of the 2,955 held-out pages, 943 clear all four and are ready for a writer, 1,624 need
+  an analyst first, and 388 are blocked outright.</p>
+
+  <h3>What should not be automated</h3>
+  <ol>
+    <li><strong>Publishing any rewrite without a person reading it.</strong> The model never
+      reads the page. It cannot tell a genuinely stale page from one that is short because
+      the answer is short.</li>
+    <li><strong>Acting on zero-click pages.</strong> Refreshing copy cannot fix broken
+      tracking, and this is the known false-alarm population.</li>
+    <li><strong>Deleting or de-indexing anything.</strong> Nothing here measures a page's
+      value away from search — internal links, email, sales use. A low score is not
+      evidence of no value.</li>
+    <li><strong>Ranking one client against another.</strong> Clients differ in history
+      depth and tracking setup; scores compare only inside one client.</li>
+    <li><strong>Promising a traffic outcome.</strong> See the limitations.</li>
   </ol>
 
+  <h3>Cost and value</h3>
+  <p>Reviewing the top 50 costs roughly 150 writer-hours at an assumed 3 hours per page —
+  and that assumption is a guess, not a measurement. From this queue about 44 of those 50
+  are genuinely declining; from a random 50 it would be about 27.5. So the queue is worth
+  roughly <strong>16 additional real finds for the same hours</strong>. That is what it
+  buys, and it is not the same as saying those refreshes recover anything.</p>
+
+  <h3>Monitoring, and when to retrain</h3>
+  <table>
+    <tr><th>Signal</th><th>Trigger</th></tr>
+    <tr><td>Precision@50 on a fresh grouped split</td><td>drops below 0.55 — the base rate, where the queue stops beating random</td></tr>
+    <tr><td>Share of the top 50 that are zero-click</td><td>above 10% — the known failure mode returning</td></tr>
+    <tr><td>Eligible page count</td><td>moves more than 20% month over month</td></tr>
+    <tr><td>Feature missingness by content type</td><td>any type crosses 40% missing</td></tr>
+    <tr><td>Reviewer agreement</td><td>writers reject more than 1 in 3 queued pages</td></tr>
+  </table>
+  <p>Retrain quarterly, not monthly — the label is cut from a 90-day window, so consecutive
+  monthly retrains would largely train on the same rows. And respect the noise floor: a
+  change smaller than the 0.76–0.92 tie-breaking band is not a result and should not
+  trigger anything.</p>
+
+  <h3>The cheap experiment that would make this real</h3>
+  <p>Refresh a random half of the queued pages, hold the other half untouched, and compare
+  after 90 days. That single step converts every claim in this paper from decision support
+  into evidence, and it costs nothing but the discipline to leave half the list alone.</p>
+
+  <h2 id="repro">Reproducibility</h2>
+
+  <p>Every number above traces to an executed notebook in the repository. Each runs top to
+  bottom against the committed dataset, and the later ones carry self-checks that fail the
+  run rather than printing a warning.</p>
+
+  <table>
+    <tr><th>Notebook</th><th>What it establishes</th></tr>
+    <tr><td><code>w01_research_question.ipynb</code></td><td>The question and who it serves</td></tr>
+    <tr><td><code>w02_ml_task_framing.ipynb</code></td><td>Ranking, not classification</td></tr>
+    <tr><td><code>w03_data_contract.ipynb</code></td><td>Eligibility gate, features, banned columns</td></tr>
+    <tr><td><code>w03_feature_leakage_check.ipynb</code></td><td>The label trap, checked</td></tr>
+    <tr><td><code>w04_baseline_score.ipynb</code></td><td>The five-line rule</td></tr>
+    <tr><td><code>w04_signal_audit.ipynb</code></td><td>Tie-breaking noise band, 0.76–0.92</td></tr>
+    <tr><td><code>w05_model.ipynb</code></td><td>Four models vs the rule, same grouped split</td></tr>
+    <tr><td><code>w06_validation_audit.ipynb</code></td><td>Row vs client split; the deliberate-leak test</td></tr>
+    <tr><td><code>w07_action_playbook.ipynb</code></td><td>Ranked queue, archetypes, no-go list</td></tr>
+  </table>
+
+  <p>Committed receipts live in <code>work/outputs/</code>
+  (<code>w04_baseline_metrics.json</code>, <code>w05_model_metrics.json</code>,
+  <code>w07_playbook_metrics.json</code>) and figures in <code>work/figures/</code>. The
+  ranked queue CSV is deliberately <em>not</em> committed — it is derived client data, and
+  the notebook regenerates it on any machine with the repository.</p>
+
+  <p>Repository: <a href="https://github.com/Zeref538/flyrank-ml-internship">github.com/Zeref538/flyrank-ml-internship</a></p>
+
+  <h3 style="margin-top:2rem">Where AI did the work</h3>
+  <p>I used Claude as a pair partner throughout — drafting notebook scaffolding, arguing
+  about validation design, and reviewing my writing for claims stronger than the evidence.
+  What I checked myself: every number in this paper was re-derived by executing the
+  notebooks, not copied from a chat. Two claims died that way. An early draft of the
+  archetype rules contained two branches that could never fire — the shortest eligible page
+  is 692 words and the oldest update is 301 days — which only surfaced when I asserted that
+  every archetype must match at least one row. And the decay curve in section 4 was
+  supposed to be a headline finding until I checked the distribution of the column it rested
+  on.</p>
+
+  <h2 class="nonum" id="ack">Acknowledgments and data credit</h2>
+
+  <div class="credit">
+    <p>Built on the <a href="https://flyrank.ai">FlyRank</a> ML Internship dataset.</p>
+    <p style="margin-bottom:0">All data is real, pseudonymised client data provided under
+    the internship's terms and treated as confidential: no client names, URLs, queries or
+    raw rows appear in this paper, in its figures, or in the public repository.</p>
+  </div>
+
+  <p>Thanks to the FlyRank team for handing interns a genuinely messy dataset rather than a
+  cleaned teaching set. The two findings I am proudest of here — the split-design effect
+  and the zero-click population — only exist because the data had real problems in it.</p>
+
   <footer>
-    Built on the <a href="https://flyrank.ai">FlyRank</a> ML Internship dataset.
-    Notebooks and code: <a href="https://github.com/Zeref538/flyrank-ml-internship">github.com/Zeref538/flyrank-ml-internship</a>
+    John Andrei Martinez · <a href="https://johnandrei.vercel.app">johnandrei.vercel.app</a>
+    · <a href="https://github.com/Zeref538">github.com/Zeref538</a><br>
+    Paper source and every notebook:
+    <a href="https://github.com/Zeref538/flyrank-ml-internship">github.com/Zeref538/flyrank-ml-internship</a>
   </footer>
+
 </main>
 </body>
 </html>
