@@ -1,0 +1,24 @@
+{
+  "design": "difference-in-differences, treated = last_optimized_date in May 2026, control = never-optimized pages from the same clients, 30-day windows",
+  "source": "FlyRank warehouse release, dim_content + fact_content_daily_performance partitions 2026-03..2026-06",
+  "pages_treated": 13233,
+  "pages_control": 44348,
+  "clients": 11,
+  "naive_did_clicks": 1.84,
+  "matched_did_clicks": 2.75,
+  "matched_strata_positive": "61/66",
+  "placebo_did_clicks": -0.71,
+  "placebo_p_value": 0.0258,
+  "three_window_treated": [
+    7.74,
+    6.04,
+    7.48
+  ],
+  "three_window_control": [
+    3.22,
+    3.21,
+    2.84
+  ],
+  "treated_recovery_pct_of_baseline": 96.6,
+  "verdict": "parallel-trends assumption violated; effect not identified. Pages that were optimized recovered, but the data cannot show optimization is why."
+}

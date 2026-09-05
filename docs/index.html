@@ -410,9 +410,63 @@ rows matching    26,612 of 26,612  (within 0.6 percentage points)</code></pre>
   clients it carries almost no usable signal, and it should not be described as a freshness
   signal anywhere.</p>
 
+  <h3>Testing the recommendation on 79 million rows — and failing to prove it</h3>
+
+  <p>Everything above is decision support because nobody ran an experiment. The
+  warehouse release turned out to hold something close to one:
+  <code>dim_content.last_optimized_date</code>, filled in for <strong>45,396 pages</strong>
+  — real pages, really optimized, on real dates, with daily traffic on both sides.</p>
+
+  <p>So I built the study. Treated: the 13,233 eligible pages optimized in May 2026, the
+  only month the fact table gives a full 30 days either side. Control: pages from the
+  <em>same clients</em> never optimized, over the same calendar days. Method:
+  difference-in-differences — how much the treated changed, minus how much the controls
+  changed, so anything seasonal cancels.</p>
+
+  <table>
+    <tr><th>Estimate</th><th>Clicks per page / 30 days</th></tr>
+    <tr><td>naive difference-in-differences</td><td class="num">+1.84</td></tr>
+    <tr><td>matched on pre-period size, within client</td><td class="num">+2.75</td></tr>
+    <tr><td><strong>placebo, two pre-treatment windows</strong></td><td class="num"><strong>−0.71</strong> (should be 0)</td></tr>
+  </table>
+
+  <p>The first two look like a result: +2.75 clicks a page, positive in 61 of 66 strata and
+  7 of 8 clients, p = 4×10⁻⁶. I believed it for about ten minutes.</p>
+
+  <p>Then the placebo. Difference-in-differences rests on one assumption — absent treatment,
+  both groups would move in parallel — and you test it by running the identical comparison on
+  two windows that are <em>both</em> before anything happened. It should return zero. It
+  returned <strong>−0.71</strong> (p = 0.026): the treated pages were already falling relative
+  to the controls before anyone touched them.</p>
+
+  <figure>
+    <img src="figures/mean_reversion.png" alt="Line chart of mean clicks per page across three consecutive 30-day windows; optimized pages fall then recover to 97% of their starting level while controls drift down">
+    <figcaption>The same 56,721 pages across three consecutive 30-day windows. The optimized
+      pages dipped, then came back to <strong>97% of their own starting level</strong> — back
+      to baseline, not above it.</figcaption>
+  </figure>
+
+  <p>Once stated it is obvious: <strong>a content team optimizes the pages that are losing
+  traffic.</strong> That is the sensible thing for them to do, and it is exactly what breaks
+  the design. Two stories now fit equally well, and this data cannot separate them —
+  optimization worked, or pages were picked during a bad month and bad months end. Story two
+  alone predicts the V and the return to 97%. Story one predicts an ending level <em>above</em>
+  baseline, which is not what happened.</p>
+
+  <p><strong>The honest claim: pages that were optimized recovered. The data cannot show that
+  optimization is why.</strong> What would settle it costs nothing but discipline — take next
+  month's candidate list, randomly optimize half, leave the rest for 30 days. Randomisation
+  makes the groups comparable by construction, and the placebo would come back at zero. That is
+  the same experiment this paper already recommended; I now have a much better argument for
+  it. Full working in
+  <a href="https://github.com/Zeref538/flyrank-ml-internship/blob/main/work/notebooks/w08_warehouse_did.ipynb"><code>w08_warehouse_did.ipynb</code></a>.</p>
+
   <h2 id="limits">Limitations and honest framing</h2>
 
   <ul>
+    <li><strong>The one causal test I could run did not identify an effect.</strong> The
+      warehouse before/after study fails its own placebo test, because pages were selected for
+      optimization while they were dipping. It bounds the problem rather than solving it.</li>
     <li><strong>Cross-sectional, no intervention.</strong> One snapshot, nobody assigned
       pages to be refreshed. This work can say "these look worth reviewing first". It can
       never say "refreshing this will recover traffic".</li>
