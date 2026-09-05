@@ -10,7 +10,7 @@ while I still remember.
 
 ## Where the next case goes
 
-One file: **`src/data.js`** in the [Portfolio repo](https://github.com/Zeref538).
+One file: **`src/data.js`** in the [Portfolio repo](https://github.com/Zeref538/portfolio).
 Nothing else. The top of that file says so:
 
 ```js
@@ -42,9 +42,15 @@ whole job — there is no component to touch and no layout to adjust.
    card only ever shows three clamped lines.
 5. **Check the numbers before pushing.** Every metric in the new case gets run
    through `/claim-check` against the source it came from. This is the step I will
-   be tempted to skip and the one that has already caught me.
-6. **Ship it:** `npm run build`, commit, push. Vercel deploys from `main` on its
-   own — about a minute. Then load the live URL and confirm the change is actually
+   be tempted to skip, and it is not hypothetical — my own site sat live for weeks
+   claiming "Precision@50 fell from 0.72 to 0.52", numbers that appear in no version
+   of the work. A second bullet fused two separate findings and got both wrong. Both
+   were caught by running the site's numbers against the capstone's committed metrics
+   files, not by re-reading the page. Re-reading never catches this; only checking
+   against the source does.
+6. **Ship it:** `npm run build`, commit, push. Vercel deploys from `master` on its
+   own (this repo is `master`, not `main` — I got this wrong in the first draft
+   of this very note) — about a minute. Then load the live URL and confirm the change is actually
    there, because editing a file is not deploying it.
 
 ## The three-beat shape (from Week 2)
@@ -59,8 +65,8 @@ scratch file, and only then fill in the object.
 | **What came of it** | A number, including the one that got worse | Is there a real figure, and did I say what it is measured against? |
 
 The third beat is the one that decides whether the case is worth having. "Built an
-X with Y" is a description. "Precision@50 fell from 0.72 to 0.52 when I tested on
-clients the model had never seen, and I published that" is evidence.
+X with Y" is a description. "Precision@50 of 0.88 against a 0.551 base rate, and it
+still lost to the five-line rule I wrote first" is evidence.
 
 **Fields that matter most, in order:** `metric` (shows on the card, so it is the
 only number most people see), `highlights` (the detail overlay — four bullets, each
