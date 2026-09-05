@@ -1,0 +1,54 @@
+{
+  "split": "GroupShuffleSplit on client_id, test_size=0.3, random_state=42",
+  "held_out_clients": 9,
+  "held_out_pages": 2955,
+  "base_rate": 0.551,
+  "roc_auc": 0.618,
+  "pr_auc": 0.667,
+  "precision_at_k": {
+    "10": 0.9,
+    "20": 0.9,
+    "50": 0.88,
+    "100": 0.78,
+    "200": 0.735
+  },
+  "lift_at_50": 1.6,
+  "archetype_counts": {
+    "no_clear_pattern": 1269,
+    "stuck_on_page_two": 635,
+    "zero_click_ghost": 388,
+    "visible_but_unclicked": 362,
+    "length_unknown": 215,
+    "short_for_its_class": 86
+  },
+  "review_status_counts": {
+    "needs an analyst look first": 1624,
+    "ready for writer": 943,
+    "BLOCKED - no-go": 388
+  },
+  "decay_by_staleness": {
+    "0-1 mo": {
+      "pages": 8632,
+      "declining_rate": 0.599
+    },
+    "1-3 mo": {
+      "pages": 85,
+      "declining_rate": 0.541
+    },
+    "3-6 mo": {
+      "pages": 4828,
+      "declining_rate": 0.631
+    },
+    "6 mo+": {
+      "pages": 17,
+      "declining_rate": 0.824
+    }
+  },
+  "decay_insight": "negative result - days_since_last_update is near-constant within client (median 3 distinct values per client), range 4-301 days, so content decay is not measurable in this snapshot",
+  "no_go_count": 6,
+  "tie_noise_band_p50": [
+    0.76,
+    0.92
+  ],
+  "assumption_hours_per_refresh": 3.0
+}
