@@ -527,12 +527,22 @@ rows matching    26,612 of 26,612  (within 0.6 percentage points)</code></pre>
     <tr><td><code>w04_signal_audit.ipynb</code></td><td>Tie-breaking noise band, 0.76–0.92</td></tr>
     <tr><td><code>w05_model.ipynb</code></td><td>Four models vs the rule, same grouped split</td></tr>
     <tr><td><code>w06_validation_audit.ipynb</code></td><td>Row vs client split; the deliberate-leak test</td></tr>
-    <tr><td><code>w07_action_playbook.ipynb</code></td><td>Ranked queue, archetypes, no-go list</td></tr>
+    <tr><td><code>w07_action_playbook.ipynb</code></td><td>Ranked queue, archetypes, no-go list, cost/value</td></tr>
+    <tr><td><strong><code>capstone.ipynb</code></strong></td><td><strong>Mirrors this paper section for section and produces every number in it — including both leakage checks</strong></td></tr>
   </table>
+
+  <p><code>capstone.ipynb</code> is the single source of truth. It runs top to bottom against
+  the committed CSV in about a minute, and ends with nine assertions that fail the run rather
+  than printing a warning — among them that no client appears on both sides of the split, that
+  the leak test still detects a leak, and that the model-versus-rule gap is smaller than the
+  tie-breaking noise band, so the paper cannot quietly start overclaiming if someone re-runs it
+  with different settings.</p>
 
   <p>Committed receipts live in <code>work/outputs/</code>
   (<code>w04_baseline_metrics.json</code>, <code>w05_model_metrics.json</code>,
-  <code>w07_playbook_metrics.json</code>) and figures in <code>work/figures/</code>. The
+  <code>w07_playbook_metrics.json</code>, and <code>capstone_metrics.json</code> which carries
+  the results table, both leakage measurements and the tie-break band) and figures in
+  <code>work/figures/</code>. The
   ranked queue CSV is deliberately <em>not</em> committed — it is derived client data, and
   the notebook regenerates it on any machine with the repository.</p>
 
