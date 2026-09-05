@@ -8,7 +8,7 @@
 <link rel="canonical" href="https://zeref538.github.io/flyrank-ml-internship/">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Which page do you fix first?">
-<meta property="og:description" content="A learned ranker beat a hand-written rule by 0.02 on Precision@50 — inside a noise band of 0.16. The honest answer is that it did not beat it.">
+<meta property="og:description" content="A learned ranker beat a five-line rule by 0.02 on Precision@50 — with a confidence interval of −0.26 to +0.14. Three negative results, on 30,000 pages and a 79-million-row warehouse.">
 <meta property="og:url" content="https://zeref538.github.io/flyrank-ml-internship/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -67,7 +67,12 @@
   figcaption{color:var(--muted);font-size:.87rem;margin-top:.6rem;line-height:1.6}
 
   code{font-family:var(--mono);font-size:.87em;background:var(--surface-2);
-       border:1px solid var(--border);border-radius:5px;padding:.1rem .35rem;color:var(--accent-2)}
+       border:1px solid var(--border);border-radius:5px;padding:.1rem .35rem;color:var(--accent-2);
+       /* inline code cannot scroll the way <pre> can, so a long column name would
+          push the whole page sideways on a narrow phone. let it break instead. */
+       overflow-wrap:anywhere}
+  pre code{overflow-wrap:normal}
+  body{overflow-x:hidden}
   pre{background:var(--surface);border:1px solid var(--border);border-radius:10px;
       padding:1rem 1.1rem;overflow-x:auto;margin:1.2rem 0}
   pre code{background:none;border:none;padding:0;color:#cdd6e0;font-size:.85rem;line-height:1.65}
@@ -107,11 +112,15 @@
     held-out set the best model reached Precision@50 of 0.88 against a base rate of 0.551,
     and the hand-written rule reached 0.86. That two-point gap sits inside a noise band of
     0.76–0.92 that the rule alone moves through purely from how tied scores are broken, so
-    the honest reading is that the model did not beat the rule. Two negative results
-    outweigh the ranking itself: splitting by row rather than by client inflates ROC-AUC from
-    0.618 to 0.728 in 8 of 8 random draws, and the label turns out to be exactly
-    reconstructible from two columns that no guidance bans, which lift the same model to
-    0.992 and would have handed me a spectacular, worthless result.</p>
+    the honest reading is that the model did not beat the rule. Three negative results
+    outweigh the ranking itself: a bootstrap over held-out clients puts the model-minus-rule
+    difference at −0.260 to +0.140, an interval containing zero; splitting by row rather than
+    by client inflates ROC-AUC from 0.618 to 0.728 in 8 of 8 draws, and the label proves exactly
+    reconstructible from two columns no guidance bans, lifting the same model to 0.992; and a
+    difference-in-differences on 45,396 genuinely optimized pages from the 79-million-row
+    warehouse fails its own placebo test, because those pages were selected while already
+    falling and recovered only to 97% of their own baseline, so this data cannot show
+    optimization is why.</p>
   </div>
 
   <div class="toc">
@@ -123,6 +132,7 @@
       <li><a href="#results">Results</a></li>
       <li><a href="#limits">Limitations and honest framing</a></li>
       <li><a href="#recs">Ranked recommendations</a></li>
+      <li><a href="#card">Model card</a></li>
       <li><a href="#repro">Reproducibility</a></li>
       <li><a href="#ack">Acknowledgments and data credit</a></li>
     </ol>
@@ -337,6 +347,32 @@ score         = ctr_gap_ratio + freshness</code></pre>
     demonstrably beat a five-line rule.</strong> A team should ship the rule, because it
     explains itself and costs nothing to maintain.</p>
   </div>
+
+  <h3>How much of that is just nine clients?</h3>
+
+  <p>The tie-break band shows the rule's score is unstable. It does not tell you how uncertain
+  the <em>model's</em> 0.88 is. Precision@50 is 44 pages out of 50, drawn from nine clients —
+  so I put an interval on it, resampling whole <strong>clients</strong> rather than pages,
+  because pages inside a client share a CMS, an audience and a tracking setup and are not
+  independent observations.</p>
+
+  <table>
+    <tr><th>Measure</th><th>Point</th><th>95% interval</th></tr>
+    <tr><td>model Precision@50</td><td class="num">0.880</td><td class="num">0.600 – 0.920</td></tr>
+    <tr><td>rule Precision@50</td><td class="num">0.860</td><td class="num">0.720 – 0.900</td></tr>
+    <tr><td><strong>model − rule</strong></td><td class="num"><strong>+0.020</strong></td><td class="num"><strong>−0.260 – +0.140</strong></td></tr>
+    <tr><td>model ROC-AUC</td><td class="num">0.618</td><td class="num">0.562 – 0.657</td></tr>
+  </table>
+
+  <p><strong>The interval on the difference contains zero</strong>, and the model came out ahead
+  in only <strong>61%</strong> of 2,000 resamples — barely better than a coin. Two independent
+  arguments now reach the same conclusion: the tie-break band, and a standard confidence
+  interval. The second is the one a reviewer will recognise, and it is the reason I am
+  comfortable stating the non-result plainly rather than hedging it.</p>
+
+  <p>Note also how wide the model's own interval is (0.600–0.920). Nine clients is not many.
+  That width is not a flaw in the analysis, it is the honest size of what nine clients can
+  tell you.</p>
 
   <h3>Where the top of the queue actually goes wrong</h3>
 
@@ -564,6 +600,30 @@ rows matching    26,612 of 26,612  (within 0.6 percentage points)</code></pre>
   <p>Refresh a random half of the queued pages, hold the other half untouched, and compare
   after 90 days. That single step converts every claim in this paper from decision support
   into evidence, and it costs nothing but the discipline to leave half the list alone.</p>
+
+  <h2 id="card">Model card</h2>
+
+  <p>A short, standard summary of what this model is and is not, so nobody has to
+  reconstruct it from the sections above.</p>
+
+  <table>
+    <tr><th>Field</th><th>Value</th></tr>
+    <tr><td>Model</td><td>Gradient boosting classifier, scikit-learn defaults, <code>random_state=42</code></td></tr>
+    <tr><td>Intended use</td><td>Ordering a content review queue inside one client, for a human strategist</td></tr>
+    <tr><td>Out of scope</td><td>Any claim about what refreshing does; comparing clients; publishing edits without review; deletion or de-indexing decisions</td></tr>
+    <tr><td>Training data</td><td>10,607 pages from 20 clients (70% of the eligible pool)</td></tr>
+    <tr><td>Evaluation data</td><td>2,955 pages from 9 clients, held out whole</td></tr>
+    <tr><td>Features</td><td>14, all knowable before the outcome; no identifiers; no label-derived columns</td></tr>
+    <tr><td>Label</td><td><code>is_declining</code>, the dataset's own trend direction</td></tr>
+    <tr><td>Primary metric</td><td>Precision@50 — only the top of the queue is ever acted on</td></tr>
+    <tr><td>Headline result</td><td>0.880 [0.600–0.920] against a base rate of 0.551</td></tr>
+    <tr><td>Baseline it must beat</td><td>Five-line rule, 0.860 [0.720–0.900]. Difference −0.260 to +0.140 — <strong>not distinguishable</strong></td></tr>
+    <tr><td>Known failure mode</td><td>Zero-click pages rank high by construction; 24 of the top 50. Blocked, not fixed</td></tr>
+    <tr><td>Fairness / group effects</td><td>Not assessed. There is no demographic data here, and the only grouping that matters — client — is handled by the split, not audited for disparate performance</td></tr>
+    <tr><td>Ethical considerations</td><td>Output can direct where writers spend time. Acting on it unreviewed risks rewriting pages that are fine and ignoring pages the model cannot see</td></tr>
+    <tr><td>Maintenance</td><td>Retrain quarterly, not monthly — the label is cut from a 90-day window. Triggers listed in section 6</td></tr>
+    <tr><td>Recommendation</td><td><strong>Ship the rule, not the model.</strong> Same performance within measurement error, and it explains itself</td></tr>
+  </table>
 
   <h2 id="repro">Reproducibility</h2>
 

@@ -60,6 +60,27 @@
     0.76,
     0.9
   ],
+  "bootstrap": {
+    "method": "cluster bootstrap, 2000 resamples of the held-out clients",
+    "model_p50_ci95": [
+      0.6,
+      0.92
+    ],
+    "rule_p50_ci95": [
+      0.72,
+      0.9
+    ],
+    "model_minus_rule_ci95": [
+      -0.26,
+      0.14
+    ],
+    "model_roc_auc_ci95": [
+      0.562,
+      0.657
+    ],
+    "resamples_model_ahead": 0.61,
+    "difference_ci_includes_zero": true
+  },
   "archetype_counts": {
     "no_clear_pattern": 1269,
     "stuck_on_page_two": 635,
