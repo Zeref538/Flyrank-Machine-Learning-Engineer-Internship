@@ -72,6 +72,7 @@ and `work/**/*.csv` is in `.gitignore`. The notebook regenerates it.
 | FL-06 | [FL-06-agent-design.md](ai-fluency/FL-06-agent-design.md) — design and eval cases, written before any code |
 | FL-07 | [FL-07-build-log.md](ai-fluency/FL-07-build-log.md) — build log, including the two failures |
 | FL-09 | [claim-check README](../.claude/skills/claim-check/README.md) — what it does, setup, architecture, v2 evals, limits |
+| FL-09 | [FL-09-demo-script.md](ai-fluency/FL-09-demo-script.md) — recording plan and narration script for the demo video |
 | — | The agent itself: [SKILL.md](../.claude/skills/claim-check/SKILL.md), [lookup.py](../.claude/skills/claim-check/lookup.py), [evals/](../.claude/skills/claim-check/evals/) |
 
 ### Fluency and workflow
