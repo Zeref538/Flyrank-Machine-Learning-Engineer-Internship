@@ -115,7 +115,7 @@ verified against the live server, not the local build.
 | # | Must-fix | What changed | Evidence |
 |---|---|---|---|
 | 1 | Three rotating job titles | One fixed title, "Machine Learning Engineer". The rotation now carries what the role means, at a smaller size below it, so it cannot compete with the title | live hero |
-| 2 | Tagline listed fields, gave no evidence | Rewritten around the honest-validation result: Precision@50 fell 0.72 to 0.52 on unseen clients and lost to a five-line rule, published anyway | live hero, and now the share-preview text too |
+| 2 | Tagline listed fields, gave no evidence | Rewritten around the honest-validation result: Precision@50 of 0.88 on unseen clients against a 0.551 base rate, with no defensible gap over a five-line rule, published anyway | live hero, and now the share-preview text too |
 | 3 | Projects trapped scrolling on a phone | The card detail panel no longer opens on a latched touch-hover, inside `@media (hover: none)` | `src/index.css`, end of file |
 | 4 | Nav looked broken on a phone | Same cause. A tapped icon kept its label stuck open; disabled where hover is not real | same block |
 

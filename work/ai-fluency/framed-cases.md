@@ -16,7 +16,7 @@ I had my AI ask me questions one at a time so I could get the story out before w
 
 **What was the hard part?** Testing it honestly. If you test the model on the same pages it already studied, of course it looks smart. So I tested it on companies it had never seen. That's the fair test.
 
-**Anything surprise you?** Yeah. My model looked great on the easy test and then lost to my simple rule on the fair one. I left that in. Felt more useful to be honest about it than to hide it.
+**Anything surprise you?** Yeah. My model looked great on the easy test, and on the fair one it could not be told apart from my simple rule. I left that in. Felt more useful to be honest about it than to hide it.
 
 ---
 
@@ -24,7 +24,7 @@ I had my AI ask me questions one at a time so I could get the story out before w
 
 A page gets found on Google and then quietly loses its visitors over time. Most teams catch it too late. There are way too many pages to go through by hand, so you have to decide which ones to fix first.
 
-I started with a simple rule so I'd have something to beat, then built a model that scores each page and puts the riskiest ones at the top of the list. The part I spent the most time on was how to test it fairly — I tested on companies the model hadn't seen instead of the ones it learned from. My own model beat the simple rule on the easy test, then lost to it on the fair test, and I kept that result.
+I started with a simple rule so I'd have something to beat, then built a model that scores each page and puts the riskiest ones at the top of the list. The part I spent the most time on was how to test it fairly — I tested on companies the model hadn't seen instead of the ones it learned from. My own model looked clearly better on the easy test, then on the fair test the gap shrank to nothing I could defend, and I kept that result.
 
 On the fair test the sorted list got about three times more of the right pages up top than the simple rule did. Honestly the number matters less to me than being able to explain why it works, and when a plain rule is actually the better choice.
 

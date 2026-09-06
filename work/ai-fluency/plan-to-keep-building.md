@@ -65,8 +65,8 @@ scratch file, and only then fill in the object.
 | **What came of it** | A number, including the one that got worse | Is there a real figure, and did I say what it is measured against? |
 
 The third beat is the one that decides whether the case is worth having. "Built an
-X with Y" is a description. "Precision@50 of 0.88 against a 0.551 base rate, and it
-still lost to the five-line rule I wrote first" is evidence.
+X with Y" is a description. "Precision@50 of 0.88 against a 0.551 base rate, and
+still no gap I could defend against the five-line rule I wrote first" is evidence.
 
 **Fields that matter most, in order:** `metric` (shows on the card, so it is the
 only number most people see), `highlights` (the detail overlay — four bullets, each
