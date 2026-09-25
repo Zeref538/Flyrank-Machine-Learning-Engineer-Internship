@@ -4,6 +4,8 @@
 
 ### 📄 [Read the paper →](https://zeref538.github.io/flyrank-ml-internship/)
 
+**Short version:** [the case study](https://zeref538.github.io/flyrank-ml-internship/case-study.html), with the leak hunt you can replay.
+
 Ranking content pages for refresh review on 30,000 pages of real client search data —
 and testing honestly whether a learned model earns its place over a five-line rule
 anyone can read.
