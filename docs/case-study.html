@@ -1,0 +1,1509 @@
+<!doctype html>
+<html lang="en" data-view="plain">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fix First: Which Page Do You Fix First?</title>
+<meta name="description" content="Case study: ranking content pages for refresh review on real client search data. The best model tied a five-line rule, a hidden leak would have faked a 0.99 score, and the one causal test failed its own placebo.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%231f5fa8'/%3E%3C/svg%3E">
+<style>
+  /* Self-hosted (SIL OFL, fonts/OFL.txt): no request to Google Fonts. */
+  @font-face { font-family: "Schibsted Grotesk"; font-weight: 400; font-display: swap;
+    src: url("fonts/schibsted-grotesk-latin-400-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Schibsted Grotesk"; font-weight: 500; font-display: swap;
+    src: url("fonts/schibsted-grotesk-latin-500-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Newsreader"; font-style: italic; font-weight: 400; font-display: swap;
+    src: url("fonts/newsreader-latin-400-italic.woff2") format("woff2"); }
+  @font-face { font-family: "Schibsted Grotesk"; font-weight: 600; font-display: swap;
+    src: url("fonts/schibsted-grotesk-latin-600-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Sora"; font-weight: 700; font-display: swap;
+    src: url("fonts/sora-latin-700-normal.woff2") format("woff2"); } /* logo only, SIL OFL */
+  @font-face { font-family: "Schibsted Grotesk"; font-weight: 700; font-display: swap;
+    src: url("fonts/schibsted-grotesk-latin-700-normal.woff2") format("woff2"); }
+  /* Fix First: the shared case-study design (Portfolio/BRAND.md), ported
+     from LiitLLM's template.html. One project colour, --proj (blue), marks
+     the model, the data and anything the reader can touch; --tide (grey)
+     marks the rule and the control. Nothing else gets a colour. */
+  :root {
+    color-scheme: light;
+    --paper: #f5f5f4; --card: #fafaf9; --sunk: #e7e5e4;
+    --ink: #1c1917; --ink-2: #57534e; --ink-3: #78716c;
+    --rule: #d6d3d1; --rule-2: #a8a29e;
+    --proj: #1f5fa8; --tide: #808080; --switch: #000000;
+    --ash: #1f5fa8; --good: #000000; --track: #ececec;
+    --proj-w: #dfe9f6; --tide-w: #ececec; --sw-w: #e5e5e5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+    --paper: #000000; --card: #141414; --sunk: #1c1c1c;
+    --ink: #ffffff; --ink-2: #c8c8c8; --ink-3: #8f8f8f;
+    --rule: #262626; --rule-2: #3a3a3a;
+    --proj: #3f86f5; --tide: #8a8a8a; --switch: #ffffff;
+    --ash: #3f86f5; --good: #ffffff; --track: #222222;
+    --proj-w: #10244a; --tide-w: #262626; --sw-w: #262626;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #000000; --card: #141414; --sunk: #1c1c1c;
+    --ink: #ffffff; --ink-2: #c8c8c8; --ink-3: #8f8f8f;
+    --rule: #262626; --rule-2: #3a3a3a;
+    --proj: #3f86f5; --tide: #8a8a8a; --switch: #ffffff;
+    --ash: #3f86f5; --good: #ffffff; --track: #222222;
+    --proj-w: #10244a; --tide-w: #262626; --sw-w: #262626;
+  }
+
+  :root {
+    --sans: "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+  }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--sans); font-size: 16.5px; line-height: 1.66;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 800px; margin: 0 auto; padding: 0 26px; }
+  @media (max-width: 560px) { .wrap { padding: 0 17px; } }
+
+  a { color: var(--switch); text-underline-offset: 2px; }
+  a:focus-visible, button:focus-visible, [contenteditable]:focus-visible {
+    outline: 2px solid var(--switch); outline-offset: 2px; border-radius: 3px;
+  }
+
+  /* ---------------- sticky bar ---------------- */
+  .bar {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--rule);
+  }
+  .bar .wrap { display: flex; align-items: center; gap: 12px; height: 54px; }
+  .brand {
+    font-weight: 800; letter-spacing: -.02em; margin-right: auto;
+    font-size: 15.5px;
+  }
+  .brand span { color: var(--switch); }
+  .seg {
+    display: inline-flex; border: 1px solid var(--rule-2); border-radius: 999px;
+    overflow: hidden; background: var(--card);
+  }
+  .seg button {
+    font: inherit; font-size: 12.5px; font-weight: 600;
+    padding: 5px 12px; border: 0; background: transparent; color: var(--ink-3);
+    cursor: pointer; white-space: nowrap;
+  }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .iconbtn {
+    font: inherit; width: 32px; height: 32px; border-radius: 999px;
+    border: 1px solid var(--rule-2); background: var(--card); color: var(--ink-2);
+    cursor: pointer; line-height: 1;
+  }
+  @media (max-width: 480px) { .seg button { padding: 5px 9px; font-size: 11.5px; } }
+
+  /* ---------------- type ---------------- */
+  h1 {
+    font-size: clamp(30px, 6.2vw, 47px); line-height: 1.06;
+    letter-spacing: -.033em; font-weight: 830; margin: 0 0 14px;
+  }
+  h2 {
+    font-size: clamp(21px, 3.4vw, 27px); line-height: 1.2;
+    letter-spacing: -.022em; font-weight: 780; margin: 0 0 16px;
+  }
+  h3 {
+    font-size: 16px; font-weight: 730; letter-spacing: -.008em;
+    margin: 32px 0 8px;
+  }
+  p { margin: 0 0 16px; }
+  .kicker {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    letter-spacing: .15em; text-transform: uppercase; color: var(--ink-3);
+    margin: 0 0 8px;
+  }
+  .lede { font-size: 18.5px; color: var(--ink-2); }
+  section { padding: 64px 0; border-top: 1px solid var(--rule); }
+  @media (max-width: 620px) { section { padding: 48px 0; } }
+  section:first-of-type { border-top: 0; }
+  .muted { color: var(--ink-3); }
+  .small { font-size: 14px; }
+  b, strong { font-weight: 700; }
+
+  /* ---------------- hero ---------------- */
+  .hero { padding: 64px 0 48px; }
+
+  /* ---------------- the scorer widget ---------------- */
+  .scorer {
+    background: var(--card); border: 2px solid var(--ink);
+    border-radius: 13px; overflow: hidden;
+  }
+  .scorer-head {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 12px 16px; border-bottom: 1px solid var(--rule);
+    background: var(--sunk);
+  }
+  .scorer-head .kicker { margin: 0; }
+  .chips { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    font: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer;
+    padding: 3px 9px; border-radius: 999px;
+    border: 1px solid var(--rule-2); background: var(--card); color: var(--ink-2);
+  }
+  .chip:hover { border-color: var(--switch); color: var(--switch); }
+
+  .readout {
+    border-top: 1px solid var(--rule); padding: 13px 16px;
+    display: grid; grid-template-columns: 1fr 1fr auto; gap: 14px; align-items: center;
+  }
+  @media (max-width: 560px) {
+    .readout { grid-template-columns: 1fr 1fr; }
+    .readout .verdict { grid-column: 1 / -1; }
+  }
+  .meter .lbl {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .06em;
+    display: flex; justify-content: space-between; margin-bottom: 5px;
+  }
+  .meter .lbl b { font-weight: 700; }
+  .bar-track { height: 7px; background: var(--track); border-radius: 999px; overflow: hidden; }
+  .bar-fill { height: 100%; width: 0; border-radius: 999px; transition: width .18s ease; }
+
+  .verdict {
+    font-family: var(--mono); font-size: 12px; font-weight: 700;
+    padding: 7px 13px; border-radius: 999px; text-align: center; white-space: nowrap;
+  }
+
+  /* ---------------- blocks ---------------- */
+  .card {
+    background: var(--card); border: 1px solid var(--rule-2);
+    border-radius: 12px; padding: 16px 24px; margin: 24px 0;
+  }
+  .note {
+    border-left: 3px solid var(--switch); background: var(--card);
+    padding: 16px 24px; margin: 24px 0; border-radius: 0 8px 8px 0;
+  }
+  .note.warn { border-left-color: var(--ash); }
+  .note .kicker { color: var(--switch); }
+  .note.warn .kicker { color: var(--ash); }
+
+  table { width: 100%; border-collapse: collapse; margin: 24px 0; font-size: 14.5px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--rule); }
+  th { font-family: var(--mono); font-size: 11px; letter-spacing: .08em;
+       text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .tw { overflow-x: auto; }
+
+  code {
+    font-family: var(--mono); font-size: .88em;
+    background: var(--sunk); padding: 1.5px 5px; border-radius: 4px;
+  }
+  pre {
+    font-family: var(--mono); font-size: 13px; line-height: 1.6;
+    background: var(--card); border: 1px solid var(--rule-2);
+    border-radius: 10px; padding: 14px 16px; overflow-x: auto;
+  }
+  pre code { background: none; padding: 0; }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 620px) { .two { grid-template-columns: 1fr; } }
+
+  .big {
+    font-family: var(--mono); font-size: clamp(30px, 7vw, 42px);
+    font-weight: 700; letter-spacing: -.03em; line-height: 1;
+  }
+   .big.tide { color: var(--tide); }
+
+  figure { margin: 32px 0; }
+  figcaption { font-size: 13px; color: var(--ink-3); margin-top: 9px; }
+  svg { display: block; max-width: 100%; height: auto; }
+  .legend {
+    display: flex; gap: 16px; flex-wrap: wrap; font-size: 12.5px;
+    font-family: var(--mono); color: var(--ink-3); margin-bottom: 8px;
+  }
+  .legend i { width: 11px; height: 3px; border-radius: 2px; display: inline-block;
+              vertical-align: middle; margin-right: 6px; }
+
+  ul { margin: 0 0 15px; padding-left: 21px; }
+  li { margin-bottom: 7px; }
+
+  footer { padding: 40px 0 64px; border-top: 1px solid var(--rule); color: var(--ink-3); font-size: 14px; }
+
+  /* ---------------- plain / technical ---------------- */
+  [data-mode] { display: none; }
+  html[data-view="plain"] [data-mode="plain"],
+  html[data-view="expert"] [data-mode="expert"] { display: block; }
+  html[data-view="plain"] span[data-mode="plain"],
+  html[data-view="expert"] span[data-mode="expert"] { display: inline; }
+  html[data-view="plain"] li[data-mode="plain"],
+  html[data-view="expert"] li[data-mode="expert"] { display: list-item; }
+
+  .kicker {
+    font-family: var(--sans); font-size: 13.5px; font-weight: 600;
+    letter-spacing: 0; text-transform: none; color: var(--proj);
+  }
+
+  .headline-num {
+    display: flex; align-items: baseline; gap: 22px; flex-wrap: wrap;
+    margin: 24px 0 32px;
+  }
+  .headline-num .x {
+    font-size: clamp(60px, 9vw, 104px); font-weight: 700; line-height: .85;
+    letter-spacing: -.05em; color: var(--proj);
+  }
+  .headline-num p { font-size: 18px; color: var(--ink-2); max-width: 30ch; margin: 0; }
+
+  /* Failures: hanging numerals, because it is a counted list. */
+
+  /* ---------------- brand mark, stats, about, footer ---------------- */
+  .mark { font-family: "Sora", var(--sans); font-weight: 700; font-size: 17px;
+          color: var(--ink); text-decoration: none; letter-spacing: -.01em; }
+  .mark span { color: var(--proj); } /* the dot takes each project's colour */
+  .brand { margin-right: auto; font-weight: 700; }
+  .brand .sep { color: var(--rule-2); margin: 0 6px 0 2px; font-weight: 400; }
+
+  .site-foot { border-top: 2px solid var(--ink); padding: 48px 0 32px; margin-top: 0; }
+  .site-foot a { color: var(--ink); }
+  .site-foot code { background: transparent; color: inherit; padding: 0; }
+  .foot-grid { max-width: 1040px; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 32px; }
+  .foot-grid nav a { display: block; margin: 0 0 8px; text-decoration: none; opacity: .85; }
+  .foot-grid nav a:hover { opacity: 1; text-decoration: underline; }
+  .foot-h { font-weight: 700; margin-bottom: 12px; }
+  .foot-base { max-width: 1040px; margin-top: 36px; padding-top: 18px; opacity: .6;
+               border-top: 1px solid var(--rule); }
+  @media (max-width: 700px) { .foot-grid { grid-template-columns: 1fr 1fr; }
+                              .foot-grid > div:first-child { grid-column: 1 / -1; } }
+
+  /* ---------------- console layout (after LiquidAI's LFM2.5 demo) ---------------- */
+  :root { --grid: rgba(28, 25, 23, .045); --serif: "Newsreader", Georgia, serif; }
+  :root[data-theme="dark"] { --grid: rgba(255, 255, 255, .04); }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) { --grid: rgba(255, 255, 255, .04); }
+  }
+  body {
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px),
+                      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  h1, h2, .display { font-weight: 500; letter-spacing: -.05em; }
+  h2 { font-size: clamp(28px, 4vw, 40px); line-height: 1.02; }
+  .it { font-family: var(--serif); font-style: italic; font-weight: 400; letter-spacing: 0; }
+  .caps { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+          color: var(--ink-3); margin: 0; }
+  .kicker { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+            color: var(--ink-3); display: flex; align-items: center; gap: 12px; }
+  .kicker::before { content: ""; width: 32px; height: 1px; background: var(--ink); }
+
+  .hero { padding: 32px 24px 64px; }
+  .console { max-width: 1360px; margin: 0 auto; border: 1px solid var(--ink); border-radius: 16px;
+             background: color-mix(in srgb, var(--paper) 88%, transparent); overflow: hidden; }
+  .console-head { display: flex; align-items: center; gap: 12px; padding: 20px 32px;
+                  border-bottom: 1px solid var(--rule); }
+  .step-no { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 999px;
+             border: 1px solid var(--rule-2); font-size: 11px; font-weight: 700; color: var(--ink-3); }
+
+  .console-body { display: grid; grid-template-columns: minmax(300px, 1fr) 2fr; }
+  .console-side { padding: 32px; border-right: 1px solid var(--rule); display: flex; flex-direction: column; }
+  .console-main { padding: 32px; min-width: 0; }
+  .lined { display: flex; align-items: center; gap: 12px; color: var(--ink); }
+  .lined::before { content: ""; width: 32px; height: 1px; background: var(--ink); }
+  .console h1 { font-size: clamp(56px, 7vw, 80px); line-height: .86; margin: 32px 0 12px; }
+  .spec { font-size: 24px; margin: 0 0 24px; }
+  .side-lede { font-size: 17px; color: var(--ink-2); margin-bottom: 24px; }
+  .specs { margin: 0 0 32px; border-top: 1px solid var(--rule); }
+  .specs div { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0;
+               border-bottom: 1px solid var(--rule); font-size: 14px; }
+  .specs dt { color: var(--ink-3); }
+  .specs dd { margin: 0; font-weight: 700; text-align: right; }
+  .side-cta { margin-top: auto; }
+  .pill { display: inline-flex; align-items: center; min-height: 48px; padding: 0 24px;
+          border-radius: 999px; background: var(--ink); color: var(--paper); font-weight: 700;
+          letter-spacing: -.01em; text-decoration: none; }
+  .pill:hover { opacity: .88; }
+  .side-cta p { margin: 12px 0 0; }
+  .display { font-size: clamp(28px, 3.4vw, 44px); line-height: 1; margin: 12px 0 32px; max-width: 18ch; }
+  .display .it { letter-spacing: -.01em; }
+  .steps { list-style: none; padding: 0; margin: 0 0 32px; display: grid; grid-template-columns: repeat(3, 1fr);
+           border: 1px solid var(--rule-2); border-radius: 12px; overflow: hidden; }
+  .steps li { margin: 0; padding: 20px; font-size: 14px; color: var(--ink-3); line-height: 1.55; position: relative; }
+  .steps li + li { border-left: 1px solid var(--rule-2); }
+  .steps .it { position: absolute; top: 16px; right: 20px; color: var(--ink-3); }
+  .steps b { display: block; margin: 24px 0 6px; font-size: 17px; color: var(--ink); }
+  .try { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+  .try .it { text-transform: none; font-size: 16px; }
+  .console .scorer { border: 1px solid var(--rule-2); border-radius: 12px; }
+
+  .closing { border-top: 0; padding: 96px 24px 64px; max-width: 1360px; margin: 0 auto; }
+  .display.closing-line { font-size: clamp(36px, 4.8vw, 60px); max-width: 16ch; margin: 0; }
+  .foot-strip { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+                max-width: 1360px; margin: 40px auto 0; padding: 20px 24px 0; border-top: 1px solid var(--rule); }
+  .rail a span { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 15px; }
+
+  @media (max-width: 900px) {
+    .console-body { grid-template-columns: 1fr; }
+    .console-side { border-right: 0; border-bottom: 1px solid var(--rule); }
+    .steps { grid-template-columns: 1fr; }
+    .steps li + li { border-left: 0; border-top: 1px solid var(--rule-2); }
+    .console-head, .console-side, .console-main { padding-left: 20px; padding-right: 20px; }
+    .hero { padding: 16px 12px 48px; }
+  }
+  .bar .wrap { max-width: 1408px; padding: 0 57px; }
+  @media (max-width: 900px) { .bar .wrap { padding: 0 32px; } }
+  .foot-grid, .foot-base { max-width: 1408px; padding-left: 57px; padding-right: 57px; }
+  .foot-strip { max-width: 1408px; padding-left: 57px; padding-right: 57px; }
+  @media (max-width: 900px) { .foot-grid, .foot-base, .foot-strip { padding-left: 20px; padding-right: 20px; } }
+  @media (max-width: 560px) {
+    .bar .brand { display: none; }
+    .bar .wrap { padding: 0 12px; gap: 8px; }
+    
+  }
+
+  /* ---------------- every section is a console panel ---------------- */
+  .panel-sec { padding: 0 0 24px; border-top: 0; }
+  .panel-sec .console-side { display: block; }
+  .side-stick { position: sticky; top: 88px; }
+  .panel-sec .console-side h2 { font-size: clamp(28px, 3vw, 40px); line-height: 1.02; margin: 0; }
+  .console-main > p, .console-main > ul, .console-main > h3, .console-main > .note { max-width: 68ch; }
+  .console-main > h3:first-child, .console-main > p:first-child { margin-top: 0; }
+
+  /* cards: notes, quotes, tables and code share the steps' bordered look */
+  .note, .card, pre, .tw {
+    background: var(--card); border: 1px solid var(--rule-2); border-radius: 12px; }
+  .note { border-left: 1px solid var(--rule-2); padding: 20px 24px; }
+
+  .tw { padding: 4px 16px; }
+  .tw table { margin: 0; }
+
+  @media (max-width: 900px) {
+    .panel-sec { padding: 0 12px 16px; }
+    .side-stick { position: static; }
+  }
+
+  /* ---------------- two columns: contents rail | panels ---------------- */
+  .page-grid { max-width: 1408px; margin: 0 auto; padding: 0 24px; }
+  @media (min-width: 1100px) {
+    .page-grid { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 32px; }
+    .page-grid > .rail {
+      display: block; position: sticky; top: 88px; align-self: start; left: auto; width: auto;
+      opacity: 1 !important; pointer-events: auto !important; font-size: 13px; line-height: 1.35;
+    }
+    .page-grid > .rail a { display: flex; gap: 12px; padding: 8px 0 8px 14px; color: var(--ink-3);
+      text-decoration: none; border-left: 1px solid var(--rule); }
+    .page-grid > .rail a:hover { color: var(--ink); }
+    .page-grid > .rail a[aria-current="true"] { color: var(--ink); font-weight: 600;
+      border-left: 2px solid var(--ink); padding-left: 13px; }
+    .page-grid > .rail a span { min-width: 1.6em; }
+  }
+  .rail-h { margin: 0 0 12px 14px; }
+  @media (max-width: 1099px) { .page-grid > .rail { display: none; } .page-grid { padding: 0 12px; } }
+
+  /* background: fine dots instead of grid lines */
+  body { background-image: radial-gradient(var(--dot) 1px, transparent 1.2px); background-size: 22px 22px; }
+  :root { --dot: rgba(28, 25, 23, .13); }
+  :root[data-theme="dark"] { --dot: rgba(255, 255, 255, .09); }
+  @media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) { --dot: rgba(255, 255, 255, .09); } }
+
+  /* inside each section card: title band on top, content gets the full width */
+  .panel-sec .console-body { display: block; }
+  .panel-sec .console-side { border-right: 0; border-bottom: 1px solid var(--rule); padding: 40px 48px 32px; }
+  .panel-sec .side-stick { position: static; }
+  .panel-sec .console-side h2 { font-size: clamp(26px, 2.8vw, 38px); max-width: 28ch; }
+  .panel-sec .console-main { padding: 40px 48px 48px; }
+  @media (max-width: 900px) {
+    .panel-sec .console-side { padding: 24px 20px; }
+    .panel-sec .console-main { padding: 24px 20px 32px; }
+  }
+
+  /* hero: open on the page, no frame. Oversized title, statement beside the story, then the live filter. */
+  .hero { max-width: 1408px; margin: 0 auto; padding: 48px 24px 64px; }
+  .hero .console { max-width: none; }
+  .hero .console-body { padding: 48px 48px 48px; }
+  .hero .console-head { display: none; }
+  .hero .console-body { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: 64px;
+    align-items: start;
+    grid-template-areas: "kick spec" "title title" "show lede" "steps steps" "try try" "tool specs" "tool cta"; }
+  .hero .console-side, .hero .console-main { display: contents; }
+  .hero .console-main > .caps:first-child { display: none; }
+  .hero .hero-kick { grid-area: kick; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; }
+  .hero .spec { grid-area: spec; justify-self: end; margin: 0; }
+  .hero h1 { grid-area: title; font-size: clamp(72px, 10vw, 144px); line-height: .82; letter-spacing: -.07em;
+    margin: 24px 0 40px; }
+  .hero .display { grid-area: show; margin: 0; max-width: 16ch; }
+  .hero .side-lede { grid-area: lede; max-width: none; margin: 8px 0 0; }
+  .hero .steps { grid-area: steps; margin: 48px 0; border: 0; border-top: 1px solid var(--ink);
+    border-bottom: 1px solid var(--rule); border-radius: 0; background: none; }
+  .hero .steps li { padding: 20px 24px 24px 0; }
+  .hero .steps li + li { border-left: 0; padding-left: 24px; }
+  .hero .steps .it { position: static; font-size: 28px; color: var(--proj); }
+  .hero .steps b { margin: 8px 0 4px; }
+  .hero .try { grid-area: try; }
+  .hero .scorer { grid-area: tool; }
+  .hero .specs { grid-area: specs; margin: 0 0 32px; }
+  .hero .side-cta { grid-area: cta; margin: 0; }
+  @media (max-width: 900px) {
+    .hero { padding: 16px 12px 48px; }
+    .hero .console-body { padding: 24px 20px 32px; }
+    .hero .console-body { grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: "kick" "spec" "title" "show" "lede" "steps" "specs" "cta" "try" "tool"; }
+    .hero .spec { justify-self: start; margin-top: 8px; }
+    .hero .side-lede { margin-top: 24px; }
+    .hero .steps li, .hero .steps li + li { padding: 16px 0; }
+    .hero .side-cta { margin-bottom: 40px; }
+  }
+
+  /* footer: a plain full-width band, not a card */
+  .closing { max-width: 1408px; margin: 0 auto; padding: 96px 24px 64px; }
+  .site-foot { background: var(--paper); border-top: 1px solid var(--ink); padding: 48px 0 24px; }
+  .site-foot .foot-grid, .site-foot .foot-strip, .site-foot .foot-base {
+    max-width: 1408px; margin-left: auto; margin-right: auto; padding-left: 24px; padding-right: 24px; }
+  .site-foot .foot-strip { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--rule); }
+  .site-foot .foot-base { margin-top: 16px; padding-top: 0; }
+  @media (max-width: 900px) {
+    .closing { padding: 64px 16px 48px; }
+    .site-foot .foot-grid, .site-foot .foot-strip, .site-foot .foot-base { padding-left: 16px; padding-right: 16px; }
+  }
+
+  /* hero, compact: fits one laptop screen. Title beside the headline, story beside the live filter. */
+  .hero { padding: 16px 24px 48px; }
+  .hero .console-body { padding: 32px 40px 0; column-gap: 56px; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    grid-template-rows: none;
+    grid-template-areas: "kick spec" "title show" "lede try" "lede tool" "specs tool" "cta tool" "steps steps"; }
+  .hero .spec { font-size: 18px; }
+  .hero h1 { font-size: clamp(60px, 7vw, 104px); margin: 8px 0 16px; align-self: end; }
+  .hero .display { align-self: end; margin: 0 0 16px; max-width: 22ch; }
+  .hero .side-lede { font-size: 15.5px; line-height: 1.6; margin: 0 0 20px; border-top: 1px solid var(--rule); padding-top: 20px; }
+  .hero .try { margin: 0 0 12px; border-top: 1px solid var(--rule); padding-top: 20px; }
+  .hero .specs { display: grid; grid-template-columns: 1fr 1fr; column-gap: 24px; margin: 0 0 20px; }
+  .hero .specs div { padding: 8px 0; }
+  .hero .side-cta .pill { min-height: 44px; }
+  .hero .side-cta p { margin-top: 8px; }
+  .hero .steps { margin: 20px -40px 0; border-top: 1px solid var(--rule); border-bottom: 0; }
+  .hero .steps li { padding: 14px 24px 16px 40px; font-size: 13.5px; }
+  .hero .steps li + li { padding-left: 24px; border-left: 1px solid var(--rule); }
+  .hero .steps .it { font-size: 18px; margin-right: 8px; }
+  .hero .steps b { display: inline; margin: 0 0 0 0; font-size: 15px; }
+  .hero .steps b::after { content: ""; display: block; height: 4px; }
+  @media (max-width: 900px) {
+    .hero { padding: 16px 12px 40px; }
+    .hero .console-body { padding: 24px 20px 0; grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: "kick" "spec" "title" "show" "lede" "specs" "cta" "try" "tool" "steps"; }
+    .hero .side-cta { margin-bottom: 28px; }
+    .hero .steps { margin: 28px -20px 0; }
+    .hero .steps li, .hero .steps li + li { padding: 14px 20px; border-left: 0; }
+  }
+
+  /* border glow, ported from the portfolio's BorderGlow: the edge nearest the pointer lights up.
+     --edge (0-100) = how close the pointer is to the edge; --angle = which side it is on. */
+  .console { position: relative; isolation: isolate; overflow: visible; --edge: 0; --angle: 45deg; }
+  .console::before, .console > .edge-light {
+    content: ""; position: absolute; border-radius: inherit; pointer-events: none;
+    opacity: calc((var(--edge) - 30) / 70); transition: opacity .25s ease-out; }
+  .console:not(:hover)::before, .console:not(:hover) > .edge-light { opacity: 0; transition: opacity .75s ease-in-out; }
+  /* the lit border: a project-colour mesh, cut to a 2px ring, then to a wedge facing the pointer */
+  .console::before { inset: -1px; padding: 2px; z-index: 2;
+    background: radial-gradient(at 80% 55%, #3f86f5, transparent 50%), radial-gradient(at 8% 6%, #9cc1fa, transparent 50%),
+                radial-gradient(at 51% 4%, #1f5fa8, transparent 50%), var(--proj);
+    mask: conic-gradient(from var(--angle), #000 25%, transparent 40%, transparent 60%, #000 75%),
+          linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: intersect, exclude; }
+  /* the soft halo outside the border, same wedge */
+  .console > .edge-light { inset: -40px; z-index: 1;
+    mask: conic-gradient(from var(--angle), #000 2.5%, transparent 10%, transparent 90%, #000 97.5%); }
+  .console > .edge-light::before { content: ""; position: absolute; inset: 40px; border-radius: inherit;
+    box-shadow: 0 0 2px 0 rgb(31 95 168 / 60%), 0 0 8px 0 rgb(31 95 168 / 35%),
+                0 0 24px 2px rgb(31 95 168 / 20%), 0 0 48px 4px rgb(31 95 168 / 10%); }
+  @media (hover: none) { .console::before, .console > .edge-light { display: none; } }
+
+  /* the card halos reach 40px past the cards; never let that widen the page */
+  html, body { overflow-x: clip; }
+  /* interactive dot field (ported from the portfolio's ParticleField) replaces the CSS dots */
+  body { background-image: none; }
+  .dot-field { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+
+  @media (max-width: 560px) { .hero .specs { grid-template-columns: 1fr; } }
+
+  /* softer glow: lights up only close to the edge, narrower wedge, fainter halo */
+  .console::before, .console > .edge-light { opacity: calc((var(--edge) - 55) / 45 * .7); }
+  .console::before { padding: 1.5px;
+    mask: conic-gradient(from var(--angle), #000 12%, transparent 26%, transparent 74%, #000 88%),
+          linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: intersect, exclude; }
+  .console > .edge-light { inset: -24px;
+    mask: conic-gradient(from var(--angle), #000 1.5%, transparent 7%, transparent 93%, #000 98.5%); }
+  .console > .edge-light::before { inset: 24px;
+    box-shadow: 0 0 2px 0 rgb(31 95 168 / 35%), 0 0 8px 0 rgb(31 95 168 / 18%), 0 0 18px 1px rgb(31 95 168 / 8%); }
+
+  /* footer author block: photo beside name, one line about him, one link */
+  .author { display: flex; gap: 16px; align-items: flex-start; max-width: 420px; }
+  .author img { width: 56px; height: 56px; border-radius: 999px; object-fit: cover; flex: none;
+                border: 1px solid var(--rule-2); }
+  .author p { margin: 0; }
+  .author-name { font-weight: 700; font-size: 16px; color: var(--ink); }
+  .author-role { font-size: 14px; color: var(--ink-3); margin: 4px 0 10px !important; line-height: 1.5; }
+  .site-foot a.author-link { font-size: 14px; font-weight: 600; color: var(--ink);
+    text-decoration: underline; text-decoration-color: var(--proj); text-underline-offset: 4px; }
+  .site-foot a.author-link:hover { text-decoration-thickness: 2px; }
+
+  /* ---------------- Fix First: the leak-sweep widget ---------------- */
+  .big.proj { color: var(--proj); }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .sweep-say { padding: 17px 16px; min-height: 92px; }
+  .sweep-col { margin: 0 0 6px; font-size: 17px; }
+  .sweep-col code { font-size: 1em; font-weight: 700; background: none; padding: 0; }
+  .m-with .bar-fill { background: var(--proj); } .m-with .lbl { color: var(--proj); }
+  .m-clean .bar-fill { background: var(--tide); } .m-clean .lbl { color: var(--ink-3); }
+  .verdict.leak { background: var(--proj-w); color: var(--proj); }
+  .verdict.fine { background: var(--sunk); color: var(--ink-3); }
+  .legend i.hollow { background: none; border: 1.5px solid var(--ink); height: 9px; }
+  /* value labels get a halo in the page colour, so grid lines stop behind them */
+  .chart text.v { paint-order: stroke; stroke: var(--paper); stroke-width: 4px; stroke-linejoin: round; }
+  .tw { margin: 24px 0; }
+  /* charts keep a readable size on phones and scroll sideways inside their own box */
+  .chart { overflow-x: auto; }
+  @media (max-width: 700px) { .chart svg { min-width: 640px; }
+    figure:has(.chart) figcaption::before { content: "Swipe the chart sideways. "; font-weight: 600; } }
+</style>
+</head>
+<body>
+<canvas class="dot-field" aria-hidden="true"></canvas>
+
+<div class="bar">
+  <div class="wrap">
+    <a class="mark" href="https://johnandrei.vercel.app" aria-label="zeref. portfolio home">zeref<span>.</span></a>
+    <div class="brand"><span class="sep">/</span> Fix First</div>
+    <div class="seg" role="group" aria-label="Reading level">
+      <button type="button" id="m-plain" aria-pressed="true">Simple</button>
+      <button type="button" id="m-expert" aria-pressed="false">Technical</button>
+    </div>
+    <button type="button" class="iconbtn" id="theme" aria-label="Switch colour theme">◐</button>
+  </div>
+</div>
+
+<header class="hero">
+<div class="console">
+  <div class="console-body">
+    <div class="console-side">
+      <div class="hero-kick">
+        <p class="caps lined">FlyRank ML capstone</p>
+      </div>
+      <h1>Fix First</h1>
+      <p class="spec it">13,562 pages &middot; 29 clients &middot; 9 held out</p>
+  <p class="lede side-lede" data-mode="plain">
+    A content team can review about fifty pages a month out of thousands. So the useful
+    question is not "which pages are dropping" but "which fifty do we look at first".
+    I wrote a five-line rule, then trained four models to beat it, and tested every one
+    on companies none of them had seen. The best model did not beat the rule by more
+    than luck can explain.
+  </p>
+  <p class="lede side-lede" data-mode="expert">
+    Refresh-priority ranking on 30,000 pseudonymised pages from 32 clients, trailing
+    90-day search metrics. A hand-written rule against four scikit-learn models, all
+    scored on clients held out whole with <code>GroupShuffleSplit</code>. Primary metric
+    Precision@50, with a cluster bootstrap over held-out clients, because only the top
+    of the queue is ever acted on.
+  </p>
+
+      <dl class="specs">
+        <div><dt>Best model, top 50</dt><dd>0.88</dd></div>
+        <div><dt>Five-line rule, top 50</dt><dd>0.86</dd></div>
+        <div><dt>Gap, 95% interval</dt><dd>&minus;0.26 to +0.14</dd></div>
+        <div><dt>Random order</dt><dd>0.551</dd></div>
+      </dl>
+      <div class="side-cta">
+        <a class="pill" href="./">Read the full paper</a>
+        <p class="small muted">The submitted capstone, every notebook linked.</p>
+      </div>
+    </div>
+    <div class="console-main">
+      <p class="caps">What this project shows</p>
+      <p class="display">The model tied a five-line rule. <span class="it">So the rule is what ships.</span></p>
+      <ol class="steps">
+        <li><span class="it">01</span><b>Rule first</b>Write the simple rule before any model, and keep it as the thing to beat.</li>
+        <li><span class="it">02</span><b>Unseen clients</b>Test only on companies the model never saw in training.</li>
+        <li><span class="it">03</span><b>Hunt the leaks</b>Add every column alone and watch what it does to the score.</li>
+      </ol>
+      <p class="caps try">The leak hunt, replayed <span class="it">pick a column</span></p>
+  <div class="scorer">
+    <div class="scorer-head">
+      <p class="small muted" style="margin:0">Each column added alone to the clean model</p>
+      <div class="chips" id="sweep-chips"></div>
+    </div>
+    <div class="sweep-say">
+      <p class="sweep-col"><code id="sw-name"></code></p>
+      <p class="small muted" id="sw-what" style="margin:0"></p>
+    </div>
+    <div class="readout">
+      <div class="meter m-clean">
+        <div class="lbl"><span>Clean model</span><b id="v-clean"></b></div>
+        <div class="bar-track"><div class="bar-fill" id="f-clean"></div></div>
+      </div>
+      <div class="meter m-with">
+        <div class="lbl"><span>With this column</span><b id="v-with"></b></div>
+        <div class="bar-track"><div class="bar-fill" id="f-with"></div></div>
+      </div>
+      <div class="verdict fine" id="verdict"></div>
+    </div>
+  </div>
+    </div>
+  </div>
+</div>
+</header>
+
+<div class="page-grid">
+<nav class="rail" aria-label="Chapters"><p class="caps rail-h">Contents</p></nav>
+<main>
+
+<section class="panel-sec" id="result">
+<div class="console">
+  <div class="console-head"><span class="step-no">01</span><span class="caps">The result</span></div>
+  <div class="console-body">
+    <div class="console-side"><div class="side-stick">
+    <h2 data-mode="plain">The model did not beat the rule</h2>
+    <h2 data-mode="expert">Precision@50 0.88 vs 0.86, and the interval on the gap contains zero</h2>
+    </div></div>
+    <div class="console-main">
+
+  <div class="headline-num">
+    <span class="x">+0.02</span>
+    <p>the model's lead over the rule in the top 50, inside an interval that runs from &minus;0.26 to +0.14.</p>
+  </div>
+
+  <p data-mode="plain">
+    Every method ranked the same 2,955 pages from 9 companies it had never seen, and I
+    checked how many of its top 50 were really losing traffic. Picking at random gets
+    0.551. The rule got 0.86. The best model got 0.88.
+  </p>
+  <p data-mode="plain">
+    Two pages out of fifty is not a win. When I re-sampled which companies were in the
+    test, the model came out ahead only 61% of the time, barely better than a coin.
+  </p>
+  <p data-mode="expert">
+    Four models and the rule, one client-grouped split, 2,955 held-out pages from 9
+    clients, base rate 0.551. Intervals are a cluster bootstrap: 2,000 resamples of
+    whole held-out clients, because pages inside one client share a CMS, an audience and
+    a tracking setup and are not independent draws. The model led in 61% of resamples.
+  </p>
+
+  <figure>
+    <div class="legend">
+      <span><i style="background:var(--proj)"></i>Best model (gradient boosting)</span>
+      <span><i style="background:var(--tide)"></i>Five-line rule</span>
+      <span class="muted">bar = 95% interval</span>
+    </div>
+    <div class="chart" id="chart-result"></div>
+    <figcaption>Precision@50 on the 9 held-out clients. The dashed line is picking pages at random.</figcaption>
+  </figure>
+
+  <div class="tw"><table>
+    <thead><tr><th>Method</th><th class="num">Top 10</th><th class="num">Top 20</th><th class="num">Top 50</th><th class="num">ROC-AUC</th></tr></thead>
+    <tbody id="results-rows"></tbody>
+  </table></div>
+
+  <div class="note">
+    <p class="kicker">Why the rule ships</p>
+    <p style="margin:0" data-mode="plain">
+      If two tools do the same job, pick the one you can read. The rule explains every
+      page it picks in one sentence, and nobody has to trust it. The model has to earn its
+      place over that, and on this data it did not.
+    </p>
+    <p style="margin:0" data-mode="expert">
+      The rule's own Precision@50 moves between 0.76 and 0.92 purely from how tied scores
+      are broken, and the model's +0.02 sits inside that band. Across 8 grouped splits the
+      model led in 6, mean margin 0.056: directionally positive, not demonstrated.
+      Equivalent performance plus free interpretability means the rule ships.
+    </p>
+  </div>
+
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="panel-sec" id="question">
+<div class="console">
+  <div class="console-head"><span class="step-no">02</span><span class="caps">The question</span></div>
+  <div class="console-body">
+    <div class="console-side"><div class="side-stick">
+    <h2 data-mode="plain">Which fifty pages should a team look at first?</h2>
+    <h2 data-mode="expert">A ranking problem under a fixed review budget, not a classification problem</h2>
+    </div></div>
+    <div class="console-main">
+
+  <div data-mode="plain">
+    <p>
+      FlyRank's clients publish more pages than anyone can keep up to date. Pages age,
+      search results shift, and traffic drifts down too slowly for anyone to notice one
+      specific page dying. The limit is not knowledge. It is hours.
+    </p>
+    <p>
+      So this project answers a narrow question on purpose: with a fixed number of review
+      hours, which pages go to the top of the pile? It does not ask whether rewriting a
+      page brings its traffic back. Nothing in this data can answer that, because nobody
+      ever tested it fairly. Section 07 is what happened when I tried anyway.
+    </p>
+  </div>
+  <div data-mode="expert">
+    <p>
+      The target is the dataset's <code>is_declining</code> label. Only the head of the
+      ranking is ever consumed, so the primary metric is Precision@K at a realistic review
+      budget (K = 50), with ROC-AUC as a secondary whole-ranking check.
+    </p>
+    <p>
+      The data is one cross-sectional snapshot with no intervention, so every output here
+      is decision support: a better order to review in. Nothing on this page is a claim
+      that refreshing a page changes its traffic.
+    </p>
+  </div>
+
+  <h3>One gate, fixed before any model</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Keep a page only if</th><th>Because</th></tr></thead>
+    <tbody>
+      <tr><td><code>impressions_90d &gt;= 250</code></td><td>Below this, a "decline" is noise on a handful of views</td></tr>
+      <tr><td><code>avg_position &gt; 0</code></td><td>Zero means "no data" here, not rank zero</td></tr>
+      <tr><td><code>avg_position &lt;= 20</code></td><td>Past page two, the fix is not a content refresh</td></tr>
+    </tbody>
+  </table></div>
+  <p>
+    That leaves <b>13,562</b> pages across <b>29</b> clients. It means everything here
+    describes pages that already get found. Pages nobody finds are a different problem.
+  </p>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="panel-sec" id="rule">
+<div class="console">
+  <div class="console-head"><span class="step-no">03</span><span class="caps">The rule to beat</span></div>
+  <div class="console-body">
+    <div class="console-side"><div class="side-stick">
+    <h2 data-mode="plain">Five lines anyone can read</h2>
+    <h2 data-mode="expert">A two-term heuristic, written before any model and kept as the bar</h2>
+    </div></div>
+    <div class="console-main">
+
+  <p data-mode="plain">
+    The rule gives a page points for two things: getting fewer clicks than other pages at
+    the same search position, and not being updated for a long time. Add them up, sort,
+    done.
+  </p>
+  <p data-mode="expert">
+    CTR shortfall against the median of the page's own position tier, plus a capped
+    staleness term. No fitting, no parameters learned from the label.
+  </p>
+  <pre><code>tier_median   = median CTR of all pages in the same position tier
+ctr_gap_ratio = clip((tier_median - ctr) / tier_median, 0, 1)
+freshness     = min(days_since_last_update / 365, 1)
+score         = ctr_gap_ratio + freshness</code></pre>
+
+  <div class="note warn">
+    <p class="kicker">Its blind spot is visible in the arithmetic</p>
+    <p style="margin:0">
+      A page with <b>zero clicks</b> gets the biggest possible click gap, so pages nobody
+      clicks float straight to the top. The models learned the same habit. Section 06 is
+      what those pages turned out to be.
+    </p>
+  </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="panel-sec" id="split">
+<div class="console">
+  <div class="console-head"><span class="step-no">04</span><span class="caps">Unseen clients</span></div>
+  <div class="console-body">
+    <div class="console-side"><div class="side-stick">
+    <h2 data-mode="plain">How you test mattered more than which model</h2>
+    <h2 data-mode="expert">Row split vs client split: +0.080 ROC-AUC, 8 of 8 draws</h2>
+    </div></div>
+    <div class="console-main">
+
+  <p data-mode="plain">
+    Pages from one company share a website, an audience and a tracking setup. If some of a
+    company's pages are in training and others are in the test, the model can learn
+    "this company's pages tend to drop" and score well without learning anything about
+    pages at all.
+  </p>
+  <p data-mode="expert">
+    Rows are not independent within a client. A row-level split lets the model memorise
+    client-level base rates and score them as skill. The fix is
+    <code>GroupShuffleSplit</code> on <code>client_id</code>, 30% of clients held out
+    whole, and asserted in code rather than assumed.
+  </p>
+
+  <div class="two">
+    <div class="card">
+      <div class="big tide">0.728</div>
+      <p class="small muted" style="margin:6px 0 0">ROC-AUC when pages are split at random, so companies appear on both sides</p>
+    </div>
+    <div class="card">
+      <div class="big proj">0.618</div>
+      <p class="small muted" style="margin:6px 0 0">Same model, same data, with whole companies held out</p>
+    </div>
+  </div>
+
+  <p>
+    Across 8 random draws the careless split scored higher <b>8 times out of 8</b>, by
+    <b>+0.080</b> on average. That is bigger than the gap between any two models I tried.
+    Someone who split by row would report a better result in good faith, having done
+    nothing a tutorial warned them about.
+  </p>
+  <pre><code>assert not (set(train_clients) &amp; set(test_clients)), "clients leaked across the split"</code></pre>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="panel-sec" id="leak">
+<div class="console">
+  <div class="console-head"><span class="step-no">05</span><span class="caps">The leak nobody warns about</span></div>
+  <div class="console-body">
+    <div class="console-side"><div class="side-stick">
+    <h2 data-mode="plain">The answer was hiding in two ordinary columns</h2>
+    <h2 data-mode="expert">The label is exactly reconstructible from two unbanned columns</h2>
+    </div></div>
+    <div class="console-main">
+
+  <p data-mode="plain">
+    The dataset's notes warn you off two columns, because the "is this page dropping"
+    answer is made from them. Ban those two and you are told you are safe. You are not.
+    Those columns are themselves made from two more columns that are still sitting in the
+    table, with harmless-looking names.
+  </p>
+  <p data-mode="expert">
+    The documentation bans <code>trend_direction</code> and <code>trend_pct</code>. But
+    <code>trend_pct</code> is computed from the 30-day impression windows, which remain in
+    the table under ordinary names. One line of arithmetic reconstructs it:
+  </p>
+  <pre><code>trend_pct == (impressions_last_30d - impressions_prev_30d) / impressions_prev_30d * 100
+
+correlation 1.0000, rows matching 26,612 of 26,612</code></pre>
+  <p>
+    Add those two columns to the model and held-out ROC-AUC jumps from <b>0.618</b> to
+    <b>0.992</b>. That looks like a triumph and is worth nothing. The model was handed the
+    answer in two pieces and asked to do the subtraction. It is a bigger effect than the
+    split problem, <b>+0.374</b> against +0.080, and harder to catch.
+  </p>
+
+  <h3>Then I stopped guessing and tested every column</h3>
+  <p data-mode="plain">
+    Finding that by reasoning was luck. So I added every remaining column to the clean
+    model one at a time and watched the score. I also slipped the banned answer column in
+    on purpose. If the test could not catch the leak I already knew about, its silence on
+    the others would mean nothing.
+  </p>
+  <p data-mode="expert">
+    Every column added singly to the clean feature set, same client-grouped split, with
+    <code>trend_pct</code> and <code>trend_direction</code> as planted positive controls.
+    Both controls lift ROC-AUC by +0.382, so the instrument works.
+  </p>
+  <figure>
+    <div class="legend">
+      <span><i class="hollow"></i>Planted control</span>
+      <span><i style="background:var(--proj)"></i>Measured over the label's 30-day windows</span>
+      <span><i style="background:var(--tide)"></i>Everything else</span>
+    </div>
+    <div class="chart" id="chart-sweep"></div>
+    <figcaption id="sweep-caption"></figcaption>
+  </figure>
+  <p>
+    It found a column I had missed, <code>clicks_last_30d</code> (+0.088). All four worst
+    offenders are <code>last_30d</code> and <code>prev_30d</code> columns. Nothing is
+    special about any one name: they leak because the label's measuring period lives
+    inside them.
+  </p>
+  <div class="note">
+    <p class="kicker">The rule I carry to the next project</p>
+    <p style="margin:0">
+      Banning the label is not enough, and a list of banned names is a patch for one
+      dataset. <b>Ban anything measured over the same window the label is measured
+      over.</b> That sentence travels.
+    </p>
+  </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="panel-sec" id="ghosts">
+<div class="console">
+  <div class="console-head"><span class="step-no">06</span><span class="caps">The zero-click pages</span></div>
+  <div class="console-body">
+    <div class="console-side"><div class="side-stick">
+    <h2 data-mode="plain">Nearly half the top 50 was not a content problem</h2>
+    <h2 data-mode="expert">24 of the top 50 are pages with impressions and zero clicks</h2>
+    </div></div>
+    <div class="console-main">
+
+  <p>
+    Of the held-out pages, <b>388</b> of 2,955 show up in search but record no clicks at
+    all. They hold <b>24</b> of the top 50 queue slots, because zero clicks gives the
+    biggest possible click gap. Rewriting a page cannot fix that if the real problem is
+    somewhere else.
+  </p>
+
+  <p data-mode="plain">
+    The easy guesses are broken tracking, bots, or an answer that shows right in Google so
+    nobody clicks. I tested instead of listing. Every one of the 2,045 zero-click pages in
+    the eligible set still gets visits, a median of 5. So people do reach them.
+  </p>
+  <p data-mode="expert">
+    Clicks and sessions come from two systems: Search Console counts search clicks,
+    analytics counts arrivals. Of 2,045 eligible pages with zero search clicks in 90
+    days, every one records sessions (median 5, up to 572), and no page anywhere has
+    clicks without sessions.
+  </p>
+
+  <ul>
+    <li><b>Not AI referrals.</b> Only 2.9% of zero-click pages get any AI visit, against
+      8.6% of pages that do get clicks.</li>
+    <li><b>Not pages that push people away.</b> They turn views into visits better, not
+      worse: 7.43 visits per 1,000 views against 5.80.</li>
+    <li><b>Shaped by company.</b> Among clients with 50 or more eligible pages, the
+      zero-click rate runs from 4% to 55%. A page-quality problem would look similar
+      everywhere. A spread that wide looks like a setup difference.</li>
+  </ul>
+  <div class="note warn">
+    <p class="kicker">So the queue's first rule is a refusal</p>
+    <p style="margin:0">
+      Zero-click pages are <b>blocked</b>: check tracking first, do not send a writer. The
+      data has no traffic-channel breakdown, so I cannot prove where the visits came from.
+      But two of the three explanations are now ruled out by measurement, not by hunch.
+    </p>
+  </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="panel-sec" id="causal">
+<div class="console">
+  <div class="console-head"><span class="step-no">07</span><span class="caps">The test that failed</span></div>
+  <div class="console-body">
+    <div class="console-side"><div class="side-stick">
+    <h2 data-mode="plain">Optimized pages recovered. The data cannot say why.</h2>
+    <h2 data-mode="expert">Difference-in-differences on 13,233 optimized pages fails its placebo</h2>
+    </div></div>
+    <div class="console-main">
+
+  <p data-mode="plain">
+    FlyRank's bigger data warehouse, 79 million rows, records the date real pages were
+    really optimized. That is close to an experiment. So I compared pages optimized in May
+    2026 with pages from the same companies that were never touched, over the same days.
+  </p>
+  <p data-mode="expert">
+    The gated warehouse release carries <code>dim_content.last_optimized_date</code>.
+    Treated: 13,233 eligible pages optimized in May 2026, the only month with a full 30
+    days either side. Control: never-optimized pages from the same clients over the same
+    calendar days. Intervals from 2,000 resamples of whole clients.
+  </p>
+
+  <div class="tw"><table>
+    <thead><tr><th>Estimate</th><th class="num">Clicks per page, 30 days</th><th class="num">95% interval</th></tr></thead>
+    <tbody>
+      <tr><td>Before vs after, naive</td><td class="num">+1.84</td><td class="num">&nbsp;</td></tr>
+      <tr><td>Matched on size, within client</td><td class="num">+2.75</td><td class="num">+1.76 to +3.50</td></tr>
+      <tr><td><b>Placebo: two windows, both before</b></td><td class="num"><b>&minus;0.71</b></td><td class="num"><b>&minus;1.21 to &minus;0.11</b></td></tr>
+    </tbody>
+  </table></div>
+
+  <p data-mode="plain">
+    +2.75 clicks a page looked like a result. I believed it for about ten minutes. Then I
+    ran the same comparison on two stretches of time that were <em>both</em> before anyone
+    touched the pages. That should come out at zero. It came out at &minus;0.71: the
+    optimized pages were already falling before anyone changed them.
+  </p>
+  <p data-mode="expert">
+    The placebo on two pre-treatment windows should be zero if parallel trends hold. It is
+    &minus;0.71 (p = 0.026), with an interval entirely below zero, so the assumption the
+    design rests on is violated. The matched interval also excludes zero, and that rescues
+    nothing: a tight interval around a biased estimate is still centred on the wrong
+    number.
+  </p>
+
+  <figure>
+    <div class="legend">
+      <span><i style="background:var(--proj)"></i>Optimized pages</span>
+      <span><i style="background:var(--tide)"></i>Never optimized</span>
+    </div>
+    <div class="chart" id="chart-windows"></div>
+    <figcaption>Mean search clicks per page, the same 56,721 pages followed through three 30-day windows. Day 0 is dropped.</figcaption>
+  </figure>
+
+  <p>
+    That shape is a V. The optimized pages dipped, then came back to <b>97%</b> of their
+    own starting level: back to normal, not above it. Two stories fit. Either the
+    optimization worked, or teams picked pages during a bad month and bad months end. Only
+    the second predicts a return to baseline rather than past it.
+  </p>
+  <div class="note">
+    <p class="kicker">What would settle it, for free</p>
+    <p style="margin:0">
+      Take next month's list, optimize a <b>random half</b>, leave the rest alone for 30
+      days. Choosing at random makes the two groups comparable by design, and the placebo
+      would come back at zero.
+    </p>
+  </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="panel-sec" id="use">
+<div class="console">
+  <div class="console-head"><span class="step-no">08</span><span class="caps">What a team gets</span></div>
+  <div class="console-body">
+    <div class="console-side"><div class="side-stick">
+    <h2 data-mode="plain">A queue with a reason on every page</h2>
+    <h2 data-mode="expert">Archetypes, review gates and a no-go list, not a bare score</h2>
+    </div></div>
+    <div class="console-main">
+
+  <p>
+    A score of 0.93 is not something a writer can act on. So every page in the queue gets
+    a plain pattern a person can confirm in a minute, mapped to one action.
+  </p>
+  <div class="tw"><table>
+    <thead><tr><th>Pattern</th><th class="num">Pages</th><th>Action</th></tr></thead>
+    <tbody id="arch-rows"></tbody>
+  </table></div>
+
+  <p>
+    Before anyone touches a page, four checks: tracking is alive, demand is real (500+
+    views), the position is known, and the click gap is measurable. Of the 2,955 held-out
+    pages, <b>943</b> clear all four and go to a writer, <b>1,624</b> need an analyst
+    first, and <b>388</b> are blocked.
+  </p>
+
+  <h3>What should never be automated</h3>
+  <ul>
+    <li><b>Publishing a rewrite nobody read.</b> The ranking never reads the page.</li>
+    <li><b>Deleting or de-indexing anything.</b> Nothing here measures a page's value away
+      from search.</li>
+    <li><b>Ranking one client against another.</b> Their tracking setups differ; scores
+      only compare inside one client.</li>
+    <li><b>Promising a traffic outcome.</b> Section 07 is why.</li>
+  </ul>
+  <p data-mode="plain">
+    The queue is worth most at the top. It is right 88% of the time in the top 50 and
+    73.5% by the top 200, so it is a triage aid, not a list to work through to the end.
+  </p>
+  <p data-mode="expert">
+    Precision decays with depth: 0.88 at K = 50, 0.735 at K = 200, against a 0.551 base
+    rate. Retrain quarterly, not monthly: the label is cut from a 90-day window, so monthly
+    retrains would mostly re-learn the same rows.
+  </p>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="panel-sec" id="limits">
+<div class="console">
+  <div class="console-head"><span class="step-no">09</span><span class="caps">What it cannot tell you</span></div>
+  <div class="console-body">
+    <div class="console-side"><div class="side-stick">
+    <h2 data-mode="plain">Nine companies, one snapshot, no experiment</h2>
+    <h2 data-mode="expert">Limits, and the ones I tested rather than just admitted</h2>
+    </div></div>
+    <div class="console-main">
+
+  <ul>
+    <li><b>Nine held-out clients.</b> Enough to expose the split problem, too few to say
+      how the ranking behaves across every industry FlyRank serves. That is why the
+      model's own interval runs from 0.60 to 0.92.</li>
+    <li><b>One snapshot, nobody assigned.</b> This can say "look at these first". It can
+      never say "rewriting this will bring traffic back".</li>
+    <li><b>The label is the dataset's definition of dropping</b>, not an independent
+      measure of harm to the business.</li>
+    <li><b>The size gate, tested.</b> I re-ran everything at gates from 100 to 2,000
+      views, each over 8 client splits. The pool halves, from 15,091 pages to 7,730, and
+      the model's edge stays between +0.027 and +0.087 while the rule still wins some
+      splits at every gate. The tie is a property of the problem, not of my threshold.</li>
+    <li><b>Content decay is not measurable here.</b> I expected older pages to drop more.
+      But the "last updated" column has a median of 3 distinct values per client: it acts
+      like a per-company crawl date, not a per-page edit date. So half of my own rule's
+      freshness term carries almost no signal. I report that rather than a decay chart.</li>
+    <li><b>The leak test only catches what moves the score.</b> A column that leaks only in
+      combination with another would pass it. A flag is strong evidence; no flag is weaker.</li>
+  </ul>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="panel-sec" id="repro">
+<div class="console">
+  <div class="console-head"><span class="step-no">10</span><span class="caps">Reproduce it</span></div>
+  <div class="console-body">
+    <div class="console-side"><div class="side-stick">
+    <h2>Run it yourself</h2>
+    </div></div>
+    <div class="console-main">
+
+  <p>
+    <code>capstone.ipynb</code> is the single source of truth. It runs top to bottom
+    against the committed data in about two and a half minutes on a laptop, and ends with assertions that fail the
+    run rather than print a warning: no client on both sides of the split, the leak test
+    still catches a leak, and the model-versus-rule interval still contains zero.
+  </p>
+  <pre><code>git clone https://github.com/Zeref538/flyrank-ml-internship
+cd flyrank-ml-internship
+pip install -r requirements.txt nbconvert ipykernel
+jupyter nbconvert --to notebook --execute --inplace work/notebooks/capstone.ipynb</code></pre>
+  <p class="small muted">
+    The warehouse study, <code>w08_warehouse_did.ipynb</code>, also needs gated access to
+    the warehouse release. Every number on this page is rebuilt from the committed result
+    files by <code>docs/build_case_study.py</code>, which refuses to build if the prose
+    disagrees with them.
+  </p>
+  <ul>
+    <li><a href="./"><b>The paper</b></a>: the full write-up, with the model card</li>
+    <li><a href="https://github.com/Zeref538/flyrank-ml-internship/blob/main/work/notebooks/capstone.ipynb">capstone.ipynb</a>: the results, the split test, both leak tests and the queue</li>
+    <li><a href="https://github.com/Zeref538/flyrank-ml-internship/blob/main/work/notebooks/w08_warehouse_did.ipynb">w08_warehouse_did.ipynb</a>: the causal test in section 07</li>
+    <li><a href="https://github.com/Zeref538/flyrank-ml-internship/tree/main/work/outputs">work/outputs/</a>: the result files this page reads</li>
+  </ul>
+  <p class="small muted">
+    <b>Stack:</b> Python, pandas, scikit-learn, DuckDB for the warehouse scan. No paid
+    services.
+  </p>
+    </div>
+  </div>
+</div>
+</section>
+
+
+</main>
+</div>
+
+<section class="closing">
+  <p class="display closing-line">The model tied the rule. <span class="it">Saying so is the result.</span></p>
+</section>
+
+<footer class="site-foot">
+  <div class="wrap foot-grid">
+    <div>
+      <div class="author">
+        <img src="img/john.jpg" alt="" width="56" height="56">
+        <div>
+          <p class="author-name">John Andrei Martinez</p>
+          <p class="author-role">Builds and measures machine learning models. This page is one of his case studies.</p>
+          <a class="author-link" href="https://johnandrei.vercel.app">Visit my portfolio</a>
+        </div>
+      </div>
+    </div>
+    <nav aria-label="More">
+      <p class="foot-h">This project</p>
+      <a href="./">The paper</a>
+      <a href="https://github.com/Zeref538/flyrank-ml-internship">Source code</a>
+      <a href="https://github.com/Zeref538/flyrank-ml-internship/blob/main/work/notebooks/capstone.ipynb">Capstone notebook</a>
+    </nav>
+    <nav aria-label="Elsewhere">
+      <p class="foot-h">More work</p>
+      <a href="https://johnandrei.vercel.app">Portfolio</a>
+      <a href="https://zeref538.github.io/liitllm/">LiitLLM, a Taglish language model</a>
+      <a href="https://github.com/Zeref538">GitHub</a>
+    </nav>
+  </div>
+  <div class="foot-strip caps">
+    <span>Fix First case study</span><span>pandas &middot; scikit-learn &middot; DuckDB</span><span>FlyRank ML internship &middot; Lane 2</span>
+  </div>
+  <div class="wrap foot-base small">
+    Data: the FlyRank ML Internship dataset, pseudonymised client data used under the
+    internship's terms. No client names, URLs, queries or rows appear on this page. Fonts:
+    Schibsted Grotesk, Newsreader and Sora, SIL OFL.
+  </div>
+</footer>
+
+<script>
+const D = {"baseRate":0.551,"cleanAuc":0.618,"results":[{"method":"base rate (random order)","P_at_10":0.551,"P_at_20":0.551,"P_at_50":0.551,"ROC_AUC":0.5},{"method":"hand-written rule","P_at_10":0.9,"P_at_20":0.95,"P_at_50":0.86,"ROC_AUC":0.578},{"method":"logistic_regression","P_at_10":0.8,"P_at_20":0.8,"P_at_50":0.78,"ROC_AUC":0.639},{"method":"decision_tree","P_at_10":0.7,"P_at_20":0.5,"P_at_50":0.5,"ROC_AUC":0.616},{"method":"random_forest","P_at_10":0.7,"P_at_20":0.7,"P_at_50":0.78,"ROC_AUC":0.623},{"method":"gradient_boosting","P_at_10":0.9,"P_at_20":0.9,"P_at_50":0.88,"ROC_AUC":0.618}],"model":{"p50":0.88},"rule":{"p50":0.86},"boot":{"method":"cluster bootstrap, 2000 resamples of the held-out clients","model_p50_ci95":[0.6,0.92],"rule_p50_ci95":[0.72,0.9],"model_minus_rule_ci95":[-0.26,0.14],"model_roc_auc_ci95":[0.562,0.657],"resamples_model_ahead":0.61,"difference_ci_includes_zero":true},"arch":{"no_clear_pattern":1269,"stuck_on_page_two":635,"zero_click_ghost":388,"visible_but_unclicked":362,"length_unknown":215,"short_for_its_class":86},"sweep":[{"column":"trend_pct","auc":1.0,"lift":0.3817,"control":true},{"column":"trend_direction","auc":1.0,"lift":0.3817,"control":true},{"column":"impressions_last_30d","auc":0.8888,"lift":0.2705,"control":false},{"column":"clicks_last_30d","auc":0.7061,"lift":0.0879,"control":false},{"column":"impressions_prev_30d","auc":0.6986,"lift":0.0803,"control":false},{"column":"sessions_last_30d","auc":0.6436,"lift":0.0253,"control":false},{"column":"model_used","auc":0.6354,"lift":0.0171,"control":false},{"column":"sessions_prev_30d","auc":0.6261,"lift":0.0078,"control":false},{"column":"content_type","auc":0.6241,"lift":0.0058,"control":false},{"column":"char_count","auc":0.6236,"lift":0.0054,"control":false},{"column":"age_tier","auc":0.6221,"lift":0.0038,"control":false},{"column":"provider_used","auc":0.6219,"lift":0.0036,"control":false},{"column":"days_with_sessions","auc":0.6211,"lift":0.0028,"control":false},{"column":"clicks_prev_30d","auc":0.6211,"lift":0.0028,"control":false},{"column":"pageviews_90d","auc":0.6209,"lift":0.0026,"control":false},{"column":"engaged_sessions_90d","auc":0.6196,"lift":0.0013,"control":false},{"column":"sessions_90d","auc":0.6194,"lift":0.0011,"control":false},{"column":"competition_level","auc":0.6182,"lift":-0.0001,"control":false},{"column":"rule_score","auc":0.6177,"lift":-0.0006,"control":false},{"column":"impression_tier","auc":0.6174,"lift":-0.0009,"control":false},{"column":"freshness_tier","auc":0.6172,"lift":-0.0011,"control":false},{"column":"age_tier_order","auc":0.6172,"lift":-0.0011,"control":false},{"column":"ai_traffic_pct","auc":0.617,"lift":-0.0013,"control":false},{"column":"position_tier","auc":0.6167,"lift":-0.0016,"control":false},{"column":"word_count_tier","auc":0.6165,"lift":-0.0018,"control":false},{"column":"char_count_tier","auc":0.6162,"lift":-0.0021,"control":false},{"column":"scroll_events_90d","auc":0.6161,"lift":-0.0022,"control":false},{"column":"ai_sessions_90d","auc":0.6148,"lift":-0.0035,"control":false},{"column":"tier_median_ctr","auc":0.6138,"lift":-0.0045,"control":false},{"column":"cpc","auc":0.6125,"lift":-0.0058,"control":false},{"column":"main_intent","auc":0.6112,"lift":-0.0071,"control":false},{"column":"users_90d","auc":0.6092,"lift":-0.009,"control":false}],"did":{"treated":[7.74,6.04,7.48],"control":[3.22,3.21,2.84]}};
+
+/* ---------- hero widget: the leak sweep, replayed ---------- */
+const WHAT = {
+  trend_pct: "The label's own source, slipped in on purpose. If the test cannot catch this, it catches nothing.",
+  impressions_last_30d: "Search views in the last 30 days. Half of the label's arithmetic.",
+  impressions_prev_30d: "Search views in the 30 days before that. The other half.",
+  clicks_last_30d: "Clicks in the last 30 days, the same window the label is measured over. The one I missed.",
+  sessions_last_30d: "Visits in the last 30 days. Same window, weaker link.",
+  content_type: "What kind of page it is. An ordinary column.",
+  char_count: "How long the page is. An ordinary column.",
+  competition_level: "How contested the search term is. An ordinary column."
+};
+const byCol = Object.fromEntries(D.sweep.map(r => [r.column, r]));
+const inWindow = c => /_(last|prev)_30d$/.test(c);
+
+function pick(col) {
+  const r = byCol[col];
+  document.getElementById("sw-name").textContent = col;
+  document.getElementById("sw-what").textContent = WHAT[col];
+  // ROC-AUC 0.5 is a coin flip, so the bars start there.
+  const w = a => Math.max(0, (a - 0.5) / 0.5 * 100) + "%";
+  document.getElementById("v-clean").textContent = D.cleanAuc.toFixed(3);
+  document.getElementById("f-clean").style.width = w(D.cleanAuc);
+  document.getElementById("v-with").textContent = r.auc.toFixed(3);
+  document.getElementById("f-with").style.width = w(r.auc);
+  const v = document.getElementById("verdict");
+  const leak = r.control || inWindow(col);
+  v.className = "verdict " + (leak ? "leak" : "fine");
+  v.textContent = r.control ? "THE ANSWER ITSELF"
+    : leak ? "LEAK " + (r.lift >= 0 ? "+" : "") + r.lift.toFixed(3)
+    : "NO LIFT " + (r.lift >= 0 ? "+" : "") + r.lift.toFixed(3);
+  document.querySelectorAll("#sweep-chips .chip").forEach(b =>
+    b.setAttribute("aria-pressed", b.dataset.col === col));
+}
+const chips = document.getElementById("sweep-chips");
+for (const col of Object.keys(WHAT)) {
+  const b = Object.assign(document.createElement("button"),
+    { type: "button", className: "chip", textContent: col.replace(/_/g, " ") });
+  b.dataset.col = col;
+  b.addEventListener("click", () => pick(col));
+  chips.appendChild(b);
+}
+pick("impressions_last_30d");
+
+/* ---------- tables ---------- */
+const NAMES = { "base rate (random order)": "Random order", "hand-written rule": "Five-line rule",
+  logistic_regression: "Logistic regression", decision_tree: "Decision tree",
+  random_forest: "Random forest", gradient_boosting: "Gradient boosting" };
+document.getElementById("results-rows").innerHTML = D.results.map(r => {
+  const f = x => x.toFixed(x === D.baseRate ? 3 : 2);
+  const b = r.method === "gradient_boosting" || r.method === "hand-written rule";
+  const td = x => `<td class="num">${b ? "<b>" + f(x) + "</b>" : f(x)}</td>`;
+  return `<tr><td>${b ? "<b>" + NAMES[r.method] + "</b>" : NAMES[r.method]}</td>` +
+    td(r.P_at_10) + td(r.P_at_20) + td(r.P_at_50) + `<td class="num">${r.ROC_AUC.toFixed(3)}</td></tr>`;
+}).join("");
+
+const ACTION = { zero_click_ghost: "<b>Blocked.</b> Check tracking first",
+  visible_but_unclicked: "Rewrite the title and description",
+  stuck_on_page_two: "Add depth and internal links",
+  length_unknown: "Analyst check, no word count on file",
+  short_for_its_class: "Expand the coverage",
+  no_clear_pattern: "A person looks, no preset action" };
+const ORDER = Object.keys(ACTION);
+document.getElementById("arch-rows").innerHTML = ORDER.map(k =>
+  `<tr><td><code>${k}</code></td><td class="num">${D.arch[k].toLocaleString("en-US")}</td><td>${ACTION[k]}</td></tr>`).join("");
+
+/* ---------- charts ---------- */
+const NS = "http://www.w3.org/2000/svg";
+function svg(tag, attrs, tip) {
+  const el = document.createElementNS(NS, tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  if (tip) { const t = document.createElementNS(NS, "title"); t.textContent = tip; el.appendChild(t); }
+  return el;
+}
+const txt = (s, x, y, extra, str) => {
+  const t = svg("text", Object.assign({ x, y, fill: "var(--ink-3)", "font-size": 11,
+    "font-family": "var(--mono)" }, extra));
+  t.textContent = str; s.appendChild(t); return t;
+};
+
+function resultChart() {
+  const rows = [
+    { label: "Best model", p: D.model.p50, ci: D.boot.model_p50_ci95, c: "var(--proj)" },
+    { label: "Rule", p: D.rule.p50, ci: D.boot.rule_p50_ci95, c: "var(--tide)" }
+  ];
+  const W = 760, H = 190, PL = 104, PR = 30, PT = 34, PB = 52, lo = 0.5, hi = 1.0;
+  const X = v => PL + (v - lo) / (hi - lo) * (W - PL - PR);
+  const s = svg("svg", { viewBox: `0 0 ${W} ${H}`, role: "img",
+    "aria-label": "Precision in the top 50 with 95% intervals, model versus rule" });
+  for (let v = lo; v <= hi + 1e-9; v += 0.1) {
+    s.appendChild(svg("line", { x1: X(v), x2: X(v), y1: PT, y2: H - PB + 4, stroke: "var(--rule)" }));
+    txt(s, X(v), H - PB + 22, { "text-anchor": "middle" }, v.toFixed(1));
+  }
+  s.appendChild(svg("line", { x1: X(D.baseRate), x2: X(D.baseRate), y1: PT - 14, y2: H - PB + 4,
+    stroke: "var(--ink-3)", "stroke-dasharray": "4 4" }, "Random order: " + D.baseRate.toFixed(3)));
+  txt(s, X(D.baseRate) + 6, PT - 8, { class: "v" }, "random " + D.baseRate.toFixed(3));
+  rows.forEach((r, i) => {
+    const y = PT + 22 + i * 50;
+    const t = svg("text", { x: PL - 14, y: y + 5, "text-anchor": "end", fill: "var(--ink)",
+      "font-size": 13, "font-weight": 700 }); t.textContent = r.label; s.appendChild(t);
+    const tip = `${r.label}: ${r.p.toFixed(2)}, 95% interval ${r.ci[0].toFixed(2)} to ${r.ci[1].toFixed(2)}`;
+    s.appendChild(svg("line", { x1: X(r.ci[0]), x2: X(r.ci[1]), y1: y, y2: y, stroke: r.c,
+      "stroke-width": 3, opacity: .35, "stroke-linecap": "round" }, tip));
+    s.appendChild(svg("circle", { cx: X(r.p), cy: y, r: 7, fill: r.c, stroke: "var(--paper)", "stroke-width": 2 }, tip));
+    txt(s, X(r.ci[1]) + 12, y + 4, { class: "v", fill: "var(--ink-2)", "font-weight": 700 }, r.p.toFixed(2));
+  });
+  txt(s, PL, H - 6, { "font-size": 11.5 }, "share of the top 50 that really were declining");
+  document.getElementById("chart-result").appendChild(s);
+}
+
+function sweepChart() {
+  const TOP = 10;
+  const rows = [...D.sweep].sort((a, b) => b.lift - a.lift).slice(0, TOP);
+  const rest = D.sweep.length - TOP;
+  const restMax = Math.max(...[...D.sweep].sort((a, b) => b.lift - a.lift).slice(TOP).map(r => r.lift));
+  const W = 760, RH = 26, PT = 8, PB = 30, PL = 196, PR = 64, H = PT + rows.length * RH + PB;
+  const max = 0.4;
+  const X = v => PL + Math.max(v, 0) / max * (W - PL - PR);
+  const s = svg("svg", { viewBox: `0 0 ${W} ${H}`, role: "img",
+    "aria-label": "ROC-AUC lift from adding each column alone, top ten columns" });
+  for (let v = 0; v <= max + 1e-9; v += 0.1) {
+    s.appendChild(svg("line", { x1: X(v), x2: X(v), y1: PT, y2: H - PB + 4, stroke: "var(--rule)" }));
+    txt(s, X(v), H - PB + 20, { "text-anchor": "middle" }, "+" + v.toFixed(1));
+  }
+  rows.forEach((r, i) => {
+    const y = PT + i * RH;
+    const c = r.control ? "var(--ink)" : inWindow(r.column) ? "var(--proj)" : "var(--tide)";
+    txt(s, PL - 10, y + RH / 2 + 4, { "text-anchor": "end", fill: "var(--ink-2)" }, r.column);
+    const tip = `${r.column}: ROC-AUC ${r.auc.toFixed(3)}, lift ${r.lift >= 0 ? "+" : ""}${r.lift.toFixed(3)}`;
+    s.appendChild(svg("rect", Object.assign({ x: PL, y: y + 5, width: Math.max(X(r.lift) - PL, 2),
+      height: RH - 10, rx: 4 }, r.control ? { fill: "none", stroke: c, "stroke-width": 1.5 } : { fill: c }), tip));
+    txt(s, X(r.lift) + 8, y + RH / 2 + 4, { class: "v", fill: "var(--ink-2)", "font-weight": 700 },
+      (r.lift >= 0 ? "+" : "") + r.lift.toFixed(3));
+  });
+  document.getElementById("chart-sweep").appendChild(s);
+  document.getElementById("sweep-caption").textContent =
+    `Held-out ROC-AUC gained by adding one column to the clean model (${D.cleanAuc.toFixed(3)}). ` +
+    `Top ${TOP} shown; the other ${rest} columns each moved it by +${restMax.toFixed(3)} or less.`;
+}
+
+function windowsChart() {
+  const lab = ["days -60 to -31", "days -30 to -1", "days +1 to +30"];
+  const series = [{ k: "Optimized", v: D.did.treated, c: "var(--proj)" },
+                  { k: "Never optimized", v: D.did.control, c: "var(--tide)" }];
+  const W = 760, H = 250, PL = 48, PR = 110, PT = 18, PB = 36, y1 = 9;
+  const X = i => PL + 30 + i * (W - PL - PR - 60) / 2;
+  const Y = v => PT + (1 - v / y1) * (H - PT - PB);
+  const s = svg("svg", { viewBox: `0 0 ${W} ${H}`, role: "img",
+    "aria-label": "Mean clicks per page across three 30-day windows, optimized versus never optimized" });
+  for (let v = 0; v <= y1; v += 3) {
+    s.appendChild(svg("line", { x1: PL, x2: W - PR + 40, y1: Y(v), y2: Y(v), stroke: "var(--rule)" }));
+    txt(s, PL - 9, Y(v) + 4, { "text-anchor": "end" }, v);
+  }
+  lab.forEach((l, i) => txt(s, X(i), H - 12, { "text-anchor": "middle" }, l));
+  // the optimization happened between the second and third windows
+  const xm = (X(1) + X(2)) / 2;
+  s.appendChild(svg("line", { x1: xm, x2: xm, y1: PT, y2: H - PB, stroke: "var(--ink-3)", "stroke-dasharray": "4 4" }));
+  txt(s, xm + 6, PT + 10, { class: "v" }, "change made");
+  for (const r of series) {
+    s.appendChild(svg("path", { d: r.v.map((v, i) => (i ? "L" : "M") + X(i) + " " + Y(v)).join(" "),
+      fill: "none", stroke: r.c, "stroke-width": 2, "stroke-linejoin": "round" }));
+    r.v.forEach((v, i) => s.appendChild(svg("circle", { cx: X(i), cy: Y(v), r: 5, fill: r.c,
+      stroke: "var(--paper)", "stroke-width": 2 }, `${r.k}, ${lab[i]}: ${v.toFixed(2)} clicks`)));
+    txt(s, X(2) + 14, Y(r.v[2]) + 4, { class: "v", fill: "var(--ink-2)", "font-weight": 700 }, r.k.toLowerCase());
+  }
+  document.getElementById("chart-windows").appendChild(s);
+}
+
+resultChart();
+sweepChart();
+windowsChart();
+
+/* ---------- controls ---------- */
+const root = document.documentElement;
+function setView(v) {
+  root.dataset.view = v;
+  document.getElementById("m-plain").setAttribute("aria-pressed", v === "plain");
+  document.getElementById("m-expert").setAttribute("aria-pressed", v === "expert");
+  try { localStorage.setItem("fixfirst-view", v); } catch (e) {}
+}
+document.getElementById("m-plain").addEventListener("click", () => setView("plain"));
+document.getElementById("m-expert").addEventListener("click", () => setView("expert"));
+
+document.getElementById("theme").addEventListener("click", () => {
+  const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+  const cur = root.dataset.theme || (dark ? "dark" : "light");
+  const next = cur === "dark" ? "light" : "dark";
+  root.dataset.theme = next;
+  try { localStorage.setItem("fixfirst-theme", next); } catch (e) {}
+});
+
+try {
+  const v = localStorage.getItem("fixfirst-view"); if (v) setView(v);
+  const t = localStorage.getItem("fixfirst-theme"); if (t) root.dataset.theme = t;
+} catch (e) {}
+
+// Chapter rail: built from each section's label, current one highlighted.
+(() => {
+  const rail = document.querySelector(".rail");
+  const secs = [...document.querySelectorAll("main section[id]")];
+  const links = secs.map(sec => {
+    const no = sec.querySelector(".console-head .step-no");
+    const title = sec.querySelector(".console-head .caps");
+    if (!no || !title) return null;
+    const a = document.createElement("a");
+    a.href = "#" + sec.id;
+    a.innerHTML = `<span>${no.textContent.trim()}</span>${title.textContent.trim()}`;
+    rail.appendChild(a);
+    return [sec, a];
+  }).filter(Boolean);
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return;
+    links.forEach(([sec, a]) => a.setAttribute("aria-current", sec === e.target));
+  }), { rootMargin: "-45% 0px -50% 0px" });
+  links.forEach(([sec]) => io.observe(sec));
+})();
+
+// Border glow: same maths as the portfolio's BorderGlow.jsx, one listener for every card.
+document.querySelectorAll(".console").forEach(card => {
+  card.prepend(Object.assign(document.createElement("span"), { className: "edge-light" }));
+  card.addEventListener("pointermove", e => {
+    const r = card.getBoundingClientRect();
+    const dx = e.clientX - r.left - r.width / 2, dy = e.clientY - r.top - r.height / 2;
+    // 0 at the centre, 1 on the edge, whichever edge is nearer in proportion
+    const edge = Math.min(Math.max(Math.abs(dx) / (r.width / 2), Math.abs(dy) / (r.height / 2)), 1);
+    let angle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+    if (angle < 0) angle += 360;
+    card.style.setProperty("--edge", (edge * 100).toFixed(1));
+    card.style.setProperty("--angle", angle.toFixed(1) + "deg");
+  });
+});
+
+// Dot field: a grid of dots that grow, turn the project colour and lean toward the pointer.
+// Same approach as the portfolio's ParticleField.jsx; sleeps when the pointer is still.
+(() => {
+  const canvas = document.querySelector(".dot-field");
+  const ctx = canvas.getContext("2d");
+  const dpr = Math.min(devicePixelRatio || 1, 2), GAP = 22, RADIUS = 140;
+  let dots = [], mouse = { x: -9999, y: -9999 }, raf = null, idle = 0, colours;
+  const readColours = () => {
+    const cs = getComputedStyle(document.documentElement);
+    colours = { dot: cs.getPropertyValue("--dot").trim() || "rgba(28,25,23,.13)",
+                hot: cs.getPropertyValue("--proj").trim() || "#1f5fa8" };
+  };
+  const build = () => {
+    canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    dots = [];
+    for (let x = GAP / 2; x < innerWidth; x += GAP)
+      for (let y = GAP / 2; y < innerHeight; y += GAP) dots.push({ ox: x, oy: y, x, y });
+  };
+  const draw = () => {
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    let moving = false;
+    for (const d of dots) {
+      const dx = mouse.x - d.ox, dy = mouse.y - d.oy, dist = Math.hypot(dx, dy);
+      const t = dist < RADIUS ? 1 - dist / RADIUS : 0;           // 0 far away, 1 under the pointer
+      const tx = d.ox + dx * 0.08 * t, ty = d.oy + dy * 0.08 * t;
+      d.x += (tx - d.x) * 0.2; d.y += (ty - d.y) * 0.2;
+      if (Math.abs(tx - d.x) > 0.05 || Math.abs(ty - d.y) > 0.05) moving = true;
+      const size = 2 + t * 2;
+      ctx.globalAlpha = t ? 0.35 + t * 0.65 : 1;
+      ctx.fillStyle = t ? colours.hot : colours.dot;
+      ctx.beginPath(); ctx.arc(d.x, d.y, size / 2, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    idle = mouse.x === -9999 && !moving ? idle + 1 : 0;
+    raf = idle > 30 ? null : requestAnimationFrame(draw);
+  };
+  const wake = () => { if (raf === null) raf = requestAnimationFrame(draw); };
+  readColours(); build(); draw();
+  addEventListener("resize", () => { build(); wake(); });
+  // theme switch changes the colours: re-read them
+  new MutationObserver(() => { readColours(); wake(); })
+    .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;   // static dots only
+  addEventListener("pointermove", e => { mouse.x = e.clientX; mouse.y = e.clientY; wake(); }, { passive: true });
+  document.addEventListener("pointerleave", () => { mouse.x = mouse.y = -9999; });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) wake(); });
+})();
+</script>
+</body>
+</html>
