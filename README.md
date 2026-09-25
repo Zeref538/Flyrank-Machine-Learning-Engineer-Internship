@@ -6,6 +6,8 @@
 
 **Short version:** [the case study](https://zeref538.github.io/flyrank-ml-internship/case-study.html), with the leak hunt you can replay.
 
+[![Fix First case study: the model tied a five-line rule, 0.88 against 0.86 in the top 50](docs/img/share.png)](https://zeref538.github.io/flyrank-ml-internship/case-study.html)
+
 Ranking content pages for refresh review on 30,000 pages of real client search data —
 and testing honestly whether a learned model earns its place over a five-line rule
 anyone can read.
