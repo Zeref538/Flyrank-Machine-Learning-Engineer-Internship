@@ -46,9 +46,9 @@ placebo.
 
 ## Read these first, fully, before changing anything
 
-1. `C:\Users\johna\OneDrive\Documents\Portfolio\BRAND.md` - the spec, including
+1. `../../BRAND.md` - the spec, including
    the "Tried and rejected" list.
-2. `C:\Users\johna\OneDrive\Documents\Portfolio\LiitLLM\docs\template.html` -
+2. `../../LiitLLM/docs/template.html` -
    the reference build.
 3. Live reference: https://zeref538.github.io/liitllm/
 4. This project's README and every file named under "Where the facts are" above.

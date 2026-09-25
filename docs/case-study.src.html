@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fix First: Which Page Do You Fix First?</title>
 <meta name="description" content="Case study: ranking content pages for refresh review on real client search data. The best model tied a five-line rule, a hidden leak would have faked a 0.99 score, and the one causal test failed its own placebo.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Fix First: the model tied a five-line rule">
+<meta property="og:description" content="Ranking content pages for refresh on real client search data. The best model did not beat a five-line rule, a hidden leak would have faked a 0.99 score, and the one causal test failed its own placebo.">
+<meta property="og:url" content="https://zeref538.github.io/flyrank-ml-internship/case-study.html">
+<meta property="og:image" content="https://zeref538.github.io/flyrank-ml-internship/img/share.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Fix First case study: the model tied a five-line rule, 0.88 against 0.86 in the top 50">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%231f5fa8'/%3E%3C/svg%3E">
 <style>
   /* Self-hosted (SIL OFL, fonts/OFL.txt): no request to Google Fonts. */
@@ -27,7 +36,7 @@
   :root {
     color-scheme: light;
     --paper: #f5f5f4; --card: #fafaf9; --sunk: #e7e5e4;
-    --ink: #1c1917; --ink-2: #57534e; --ink-3: #78716c;
+    --ink: #1c1917; --ink-2: #57534e; --ink-3: #6b645f;
     --rule: #d6d3d1; --rule-2: #a8a29e;
     --proj: #1f5fa8; --tide: #808080; --switch: #000000;
     --ash: #1f5fa8; --good: #000000; --track: #ececec;
@@ -41,7 +50,7 @@
     --rule: #262626; --rule-2: #3a3a3a;
     --proj: #3f86f5; --tide: #8a8a8a; --switch: #ffffff;
     --ash: #3f86f5; --good: #ffffff; --track: #222222;
-    --proj-w: #10244a; --tide-w: #262626; --sw-w: #262626;
+    --proj-w: #0c1c3b; --tide-w: #262626; --sw-w: #262626;
     }
   }
   :root[data-theme="dark"] {
@@ -51,7 +60,7 @@
     --rule: #262626; --rule-2: #3a3a3a;
     --proj: #3f86f5; --tide: #8a8a8a; --switch: #ffffff;
     --ash: #3f86f5; --good: #ffffff; --track: #222222;
-    --proj-w: #10244a; --tide-w: #262626; --sw-w: #262626;
+    --proj-w: #0c1c3b; --tide-w: #262626; --sw-w: #262626;
   }
 
   :root {
@@ -1034,7 +1043,7 @@ correlation 1.0000, rows matching 26,612 of 26,612</code></pre>
       <span><i style="background:var(--tide)"></i>Never optimized</span>
     </div>
     <div class="chart" id="chart-windows"></div>
-    <figcaption>Mean search clicks per page, the same 56,721 pages followed through three 30-day windows. Day 0 is dropped.</figcaption>
+    <figcaption>Mean search clicks per page, the same 56,721 pages followed through three 30-day windows. Day 0 is dropped. Compare the shapes, not the heights: the optimized pages were already busier before anything changed.</figcaption>
   </figure>
 
   <p>
