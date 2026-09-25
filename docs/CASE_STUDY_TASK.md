@@ -6,11 +6,12 @@ shared design, then cleans up the project.
 
 ## Where the page goes
 
-**Add the page at `docs/case-study.html`.** GitHub Pages serves `docs/` on
-`main` (https://zeref538.github.io/flyrank-ml-internship/), and the
-`docs/index.html` there is the capstone paper, the submitted deliverable
-(`submission/paper_url.txt`). Do not change the paper beyond adding a link.
-Link the two pages to each other.
+**Done, then moved (25 Sep 2026):** the case study is the site's front page,
+`docs/index.html`, built by `docs/build_case_study.py` from
+`docs/case-study.src.html`. The capstone paper, the submitted deliverable
+(`submission/paper_url.txt`), moved to `docs/paper.html` in a docs layout with
+its text unchanged. `docs/case-study.html` only redirects to the front page.
+GitHub Pages serves `docs/` on `main`.
 
 ## The story this page tells
 

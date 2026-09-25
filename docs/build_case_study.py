@@ -1,4 +1,4 @@
-"""Build docs/case-study.html from docs/case-study.src.html and the committed results.
+"""Build docs/index.html (the case study, the site's front page) from docs/case-study.src.html and the committed results.
 
     python docs/build_case_study.py
 
@@ -7,7 +7,7 @@ the prose quotes is checked against the result files. A re-run with new results
 that disagree with the copy fails the build instead of publishing a stale claim.
 
 Prose lives in case-study.src.html. Measurements live in work/outputs/*.json.
-Edit the source, never case-study.html.
+Edit the source, never index.html. The paper is docs/paper.html.
 """
 from __future__ import annotations
 
@@ -59,7 +59,7 @@ def main():
     check_privacy(html)
     check(html, cap, sweep, gates, play, w05, did)
 
-    out = DOCS / "case-study.html"
+    out = DOCS / "index.html"
     out.write_text(html, encoding="utf-8")
     print(f"wrote {out.relative_to(ROOT)} ({out.stat().st_size:,} bytes)")
 

@@ -2,11 +2,11 @@
 
 **John Andrei Martinez · FlyRank ML Internship · Lane 2, Refresh / Content Opportunity Scoring**
 
-### 📄 [Read the paper →](https://zeref538.github.io/flyrank-ml-internship/)
+### 📄 [Read the paper →](https://zeref538.github.io/flyrank-ml-internship/paper.html)
 
-**Short version:** [the case study](https://zeref538.github.io/flyrank-ml-internship/case-study.html), with the leak hunt you can replay.
+**Short version:** [the case study](https://zeref538.github.io/flyrank-ml-internship/), with the leak hunt you can replay.
 
-[![Fix First case study: the model tied a five-line rule, 0.88 against 0.86 in the top 50](docs/img/share.png)](https://zeref538.github.io/flyrank-ml-internship/case-study.html)
+[![Fix First case study: the model tied a five-line rule, 0.88 against 0.86 in the top 50](docs/img/share.png)](https://zeref538.github.io/flyrank-ml-internship/)
 
 Ranking content pages for refresh review on 30,000 pages of real client search data —
 and testing honestly whether a learned model earns its place over a five-line rule
@@ -29,7 +29,8 @@ interval on the difference of **−0.260 to +0.140** — an interval containing 
 
 | | |
 |---|---|
-| The deployed paper | https://zeref538.github.io/flyrank-ml-internship/ |
+| The deployed paper | https://zeref538.github.io/flyrank-ml-internship/paper.html |
+| The case study (short version) | https://zeref538.github.io/flyrank-ml-internship/ |
 | Index of every deliverable | [`work/INDEX.md`](work/INDEX.md) |
 | Capstone notebook (single source of truth) | [`work/notebooks/capstone.ipynb`](work/notebooks/capstone.ipynb) |
 | Warehouse before/after study | [`work/notebooks/w08_warehouse_did.ipynb`](work/notebooks/w08_warehouse_did.ipynb) |

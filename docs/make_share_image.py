@@ -26,7 +26,7 @@ try:
         # 1600x840 at 0.75 scale is exactly 1200x630, the ratio link previews expect
         page = browser.new_page(viewport={"width": 1600, "height": 840},
                                 device_scale_factor=0.75, color_scheme="light")
-        page.goto(f"http://127.0.0.1:{server.server_port}/case-study.html", wait_until="networkidle")
+        page.goto(f"http://127.0.0.1:{server.server_port}/", wait_until="networkidle")
         page.evaluate("document.fonts.ready")
         page.screenshot(path=str(OUT))
         browser.close()

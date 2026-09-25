@@ -5,7 +5,7 @@ Machine Learning track (main) · General AI Fluency track
 
 | | |
 |---|---|
-| **Research paper (capstone)** | https://zeref538.github.io/flyrank-ml-internship/ |
+| **Research paper (capstone)** | https://zeref538.github.io/flyrank-ml-internship/paper.html |
 | **Personal site** | https://johnandrei.vercel.app |
 | **This repository** | https://github.com/Zeref538/flyrank-ml-internship |
 
@@ -15,7 +15,7 @@ Machine Learning track (main) · General AI Fluency track
 
 If you only open three things:
 
-1. **[The paper](https://zeref538.github.io/flyrank-ml-internship/)** — the capstone,
+1. **[The paper](https://zeref538.github.io/flyrank-ml-internship/paper.html)** — the capstone,
    with the honest conclusion that the model did not beat a five-line rule.
 2. **[w06_validation_audit.ipynb](notebooks/w06_validation_audit.ipynb)** — the
    finding I would defend hardest: a row split inflates ROC-AUC by 0.080 over a
@@ -41,7 +41,7 @@ carry self-checks that fail the run rather than printing a warning.
 | ML-08 | [w05_model.ipynb](notebooks/w05_model.ipynb) | Four models vs the rule on the same grouped split |
 | ML-09 | [w06_validation_audit.ipynb](notebooks/w06_validation_audit.ipynb) | Row vs client split; deliberate-leak test |
 | ML-10 | [w07_action_playbook.ipynb](notebooks/w07_action_playbook.ipynb) | Ranked queue, archetypes, no-go list, cost/value |
-| ML-11 | [docs/index.html](../docs/index.html) → [live](https://zeref538.github.io/flyrank-ml-internship/) | The deployed paper |
+| ML-11 | [docs/paper.html](../docs/paper.html) → [live](https://zeref538.github.io/flyrank-ml-internship/paper.html) | The deployed paper |
 | ML-12 | [w07_action_playbook.ipynb](notebooks/w07_action_playbook.ipynb) (closing cells) | Demo outline + two shareable cuts |
 | Capstone | [capstone.ipynb](notebooks/capstone.ipynb) | Mirrors the paper section for section; single source of truth |
 | Extension | [w08_warehouse_did.ipynb](notebooks/w08_warehouse_did.ipynb) | Before/after study on 13,233 optimized pages from the 79M-row warehouse; placebo test fails and says why |
