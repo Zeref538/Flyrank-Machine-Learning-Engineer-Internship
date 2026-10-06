@@ -45,7 +45,7 @@ the standard library — the lookup tool imports only `re`, `json`, `pathlib` an
 `sys` on purpose, so it cannot break because of a dependency.
 
 ```bash
-git clone https://github.com/Zeref538/flyrank-ml-internship
+git clone https://github.com/Zeref538/Flyrank-Machine-Learning-Engineer-Internship
 cd flyrank-ml-internship
 
 # 1. the search tool runs standalone -- check it works before involving an agent

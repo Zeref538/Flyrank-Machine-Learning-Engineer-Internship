@@ -2,11 +2,11 @@
 
 **John Andrei Martinez · FlyRank ML Internship · Lane 2, Refresh / Content Opportunity Scoring**
 
-### 📄 [Read the paper →](https://zeref538.github.io/flyrank-ml-internship/paper.html)
+### 📄 [Read the paper →](https://zeref538.github.io/Flyrank-Machine-Learning-Engineer-Internship/paper.html)
 
-**Short version:** [the case study](https://zeref538.github.io/flyrank-ml-internship/), with the leak hunt you can replay.
+**Short version:** [the case study](https://zeref538.github.io/Flyrank-Machine-Learning-Engineer-Internship/), with the leak hunt you can replay.
 
-[![Fix First case study: the model tied a five-line rule, 0.88 against 0.86 in the top 50](docs/img/share.png)](https://zeref538.github.io/flyrank-ml-internship/)
+[![Fix First case study: the model tied a five-line rule, 0.88 against 0.86 in the top 50](docs/img/share.png)](https://zeref538.github.io/Flyrank-Machine-Learning-Engineer-Internship/)
 
 Ranking content pages for refresh review on 30,000 pages of real client search data —
 and testing honestly whether a learned model earns its place over a five-line rule
@@ -29,8 +29,8 @@ interval on the difference of **−0.260 to +0.140** — an interval containing 
 
 | | |
 |---|---|
-| The deployed paper | https://zeref538.github.io/flyrank-ml-internship/paper.html |
-| The case study (short version) | https://zeref538.github.io/flyrank-ml-internship/ |
+| The deployed paper | https://zeref538.github.io/Flyrank-Machine-Learning-Engineer-Internship/paper.html |
+| The case study (short version) | https://zeref538.github.io/Flyrank-Machine-Learning-Engineer-Internship/ |
 | Index of every deliverable | [`work/INDEX.md`](work/INDEX.md) |
 | Capstone notebook (single source of truth) | [`work/notebooks/capstone.ipynb`](work/notebooks/capstone.ipynb) |
 | Warehouse before/after study | [`work/notebooks/w08_warehouse_did.ipynb`](work/notebooks/w08_warehouse_did.ipynb) |
@@ -75,13 +75,13 @@ no private client data, no setup headaches.
 
 The fastest path is Google Colab (one click, zero install). Open Notebook 1 and run all cells:
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/flyrank-ml-internship/blob/main/notebooks/01_first_look_and_discovery.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/Flyrank-Machine-Learning-Engineer-Internship/blob/main/notebooks/01_first_look_and_discovery.ipynb)
  **Week 1 — Run it, then discover a real truth yourself**
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/flyrank-ml-internship/blob/main/notebooks/02_your_first_readable_model.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/Flyrank-Machine-Learning-Engineer-Internship/blob/main/notebooks/02_your_first_readable_model.ipynb)
  **Week 2 — The model is just a rule you can read**
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/flyrank-ml-internship/blob/main/notebooks/03_working_with_the_full_release.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/Flyrank-Machine-Learning-Engineer-Internship/blob/main/notebooks/03_working_with_the_full_release.ipynb)
  **Weeks 3+ — The full release (~79M rows) via DuckDB, no download needed** — hosted at
  [`FlyRank/internship-warehouse`](https://huggingface.co/datasets/FlyRank/internship-warehouse) (gated: request access + accept the data-use terms, approval is instant)
 
@@ -101,16 +101,16 @@ already pre-filled with your repo and the right path.
 
 | Week | Card | Notebook | Open |
 |---|---|---|---|
-| 1 | ML-02 | `w01_research_question` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/flyrank-ml-internship/blob/main/work/notebooks/w01_research_question.ipynb) |
-| 2 | ML-03 | `w02_ml_task_framing` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/flyrank-ml-internship/blob/main/work/notebooks/w02_ml_task_framing.ipynb) |
-| 3 | ML-04 | `w03_data_contract` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/flyrank-ml-internship/blob/main/work/notebooks/w03_data_contract.ipynb) |
-| 3 | ML-05 | `w03_feature_leakage_check` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/flyrank-ml-internship/blob/main/work/notebooks/w03_feature_leakage_check.ipynb) |
-| 4 | ML-06 | `w04_signal_audit` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/flyrank-ml-internship/blob/main/work/notebooks/w04_signal_audit.ipynb) |
-| 4 | ML-07 | `w04_baseline_score` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/flyrank-ml-internship/blob/main/work/notebooks/w04_baseline_score.ipynb) |
-| 5 | ML-08 | `w05_model` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/flyrank-ml-internship/blob/main/work/notebooks/w05_model.ipynb) |
-| 6 | ML-09 | `w06_validation_audit` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/flyrank-ml-internship/blob/main/work/notebooks/w06_validation_audit.ipynb) |
-| 7 | ML-10 | `w07_action_playbook` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/flyrank-ml-internship/blob/main/work/notebooks/w07_action_playbook.ipynb) |
-| 8 | ML-11 | `capstone` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/flyrank-ml-internship/blob/main/work/notebooks/capstone.ipynb) |
+| 1 | ML-02 | `w01_research_question` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/Flyrank-Machine-Learning-Engineer-Internship/blob/main/work/notebooks/w01_research_question.ipynb) |
+| 2 | ML-03 | `w02_ml_task_framing` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/Flyrank-Machine-Learning-Engineer-Internship/blob/main/work/notebooks/w02_ml_task_framing.ipynb) |
+| 3 | ML-04 | `w03_data_contract` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/Flyrank-Machine-Learning-Engineer-Internship/blob/main/work/notebooks/w03_data_contract.ipynb) |
+| 3 | ML-05 | `w03_feature_leakage_check` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/Flyrank-Machine-Learning-Engineer-Internship/blob/main/work/notebooks/w03_feature_leakage_check.ipynb) |
+| 4 | ML-06 | `w04_signal_audit` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/Flyrank-Machine-Learning-Engineer-Internship/blob/main/work/notebooks/w04_signal_audit.ipynb) |
+| 4 | ML-07 | `w04_baseline_score` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/Flyrank-Machine-Learning-Engineer-Internship/blob/main/work/notebooks/w04_baseline_score.ipynb) |
+| 5 | ML-08 | `w05_model` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/Flyrank-Machine-Learning-Engineer-Internship/blob/main/work/notebooks/w05_model.ipynb) |
+| 6 | ML-09 | `w06_validation_audit` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/Flyrank-Machine-Learning-Engineer-Internship/blob/main/work/notebooks/w06_validation_audit.ipynb) |
+| 7 | ML-10 | `w07_action_playbook` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/Flyrank-Machine-Learning-Engineer-Internship/blob/main/work/notebooks/w07_action_playbook.ipynb) |
+| 8 | ML-11 | `capstone` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Zeref538/Flyrank-Machine-Learning-Engineer-Internship/blob/main/work/notebooks/capstone.ipynb) |
 
 Badges not opening *your* copy? Colab's built-in opener always works: **File → Open notebook
 → GitHub tab** → paste `github.com/you/your-repo` → pick the notebook.
