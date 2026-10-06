@@ -72,16 +72,33 @@ def rule(tr, te, seed):
     return elig.rule_score.values[te]
 
 
+def blend_strict(tr, te, seed):
+    "Leak check for blend_rule_gb: the tier-median CTR (used by the rule and by ctr_gap_ratio)"
+    "is computed from the training clients only, so test pages never shape their own score."
+    e = elig.copy()
+    med = e.iloc[tr].groupby("position_tier")["ctr"].median()
+    tm = e.position_tier.map(med)
+    e["ctr_gap_ratio"] = ((tm - e.ctr) / tm.replace(0, np.nan)).clip(lower=0).fillna(0)
+    r = (e.ctr_gap_ratio + e.freshness_term).values
+    Xs = e[FEATURES].replace([np.inf, -np.inf], np.nan).fillna(0)
+    m = GradientBoostingClassifier(random_state=seed).fit(Xs.iloc[tr], y[tr])
+    return (pd.Series(r[te]).rank(pct=True)
+            + pd.Series(m.predict_proba(Xs.iloc[te])[:, 1]).rank(pct=True)).values
+
+
 RUNS = {
     "rule": rule,
     "gb_paper": gb(X),
     "gb_client_rank": gb(X_rank),
     "gb_raw_plus_rank": gb(pd.concat([X, X_rank.add_suffix("_r")], axis=1)),
-    "gb_client_rank_shallow": gb(X_rank, n_estimators=300, learning_rate=0.03, max_depth=2,
-                                 subsample=0.8),
-    "blend_rule_gb_rank": rank_blend(rule, gb(X_rank)),
-    "hgb_client_rank": lambda tr, te, seed: HistGradientBoostingClassifier(random_state=seed)
-        .fit(X_rank.iloc[tr], y[tr]).predict_proba(X_rank.iloc[te])[:, 1],
+    "gb_shallow_slow": gb(X, n_estimators=400, learning_rate=0.03, max_depth=2, subsample=0.8),
+    "gb_min_leaf_50": gb(X, min_samples_leaf=50),
+    "blend_rule_gb": rank_blend(rule, gb(X)),
+    "blend_rule_gb_shallow": rank_blend(rule, gb(X, n_estimators=400, learning_rate=0.03,
+                                                max_depth=2, subsample=0.8)),
+    "blend_rule_gb_strict": blend_strict,
+    "hgb": lambda tr, te, seed: HistGradientBoostingClassifier(random_state=seed)
+        .fit(X.iloc[tr], y[tr]).predict_proba(X.iloc[te])[:, 1],
 }
 
 
@@ -128,14 +145,34 @@ def summarise(name, R):
         auc=round(R.auc.mean(), 3),
         pc10=round(R.pc10.mean(), 3), pc10_minus_rule=round(dc.mean(), 3),
         pc10_folds_won=int((dc > 0).sum()), pc10_folds_lost=int((dc < 0).sum()),
+        seeds=SEEDS, fold_p50=R.p50.round(3).tolist(), fold_pc10=R.pc10.round(3).tolist(),
     )
 
 
+def versus(a, b):
+    "Fold-by-fold: does run a beat run b on the same folds?"
+    log = {r["run"]: r for r in json.loads(OUT.read_text())}
+    d = np.array(log[a]["fold_p50"]) - np.array(log[b]["fold_p50"])
+    dc = np.array(log[a]["fold_pc10"]) - np.array(log[b]["fold_pc10"])
+    seed_means = d.reshape(len(log[a]["seeds"]), K).mean(axis=1).round(3).tolist()
+    print(f"{a} minus {b}: P@50 {d.mean():+.3f}, seed means {seed_means}, "
+          f"folds won {(d > 0).sum()} lost {(d < 0).sum()} | "
+          f"per-client P@10 {dc.mean():+.3f}, won {(dc > 0).sum()} lost {(dc < 0).sum()}")
+
+
 if __name__ == "__main__":
+    if len(sys.argv) == 4 and sys.argv[2] == "--vs":
+        sys.exit(versus(sys.argv[1], sys.argv[3]))
+    if "--confirm" in sys.argv:          # fresh seeds never used while choosing
+        SEEDS = [4, 5, 6, 7, 8, 9]
+        sys.argv.remove("--confirm")
+        suffix = "@confirm"
+    else:
+        suffix = ""
     if len(sys.argv) != 2 or sys.argv[1] not in RUNS:
         sys.exit("runs: " + ", ".join(RUNS))
-    name = sys.argv[1]
-    s = summarise(name, evaluate(RUNS[name]))
+    name = sys.argv[1] + suffix
+    s = summarise(name, evaluate(RUNS[sys.argv[1]]))
     print(json.dumps(s, indent=2))
     log = json.loads(OUT.read_text()) if OUT.exists() else []
     OUT.write_text(json.dumps([r for r in log if r["run"] != name] + [s], indent=2))
