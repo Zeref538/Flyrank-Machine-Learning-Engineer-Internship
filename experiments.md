@@ -32,7 +32,7 @@ The capstone reported a tie: gradient boosting P@50 0.88 vs the rule's 0.86 on o
 ```
 Best: run 8 (rank blend of the rule and gradient boosting), P@50 0.879 +/- 0.008 (4 seeds, 20 folds, 13,562 pages, 29 clients), commit 6697923
 Confirmed on 6 fresh seeds: P@50 0.853 vs the rule's 0.764, +0.089, model ahead on every seed and in 25 of 30 folds
-Tried: 10 runs after the baseline, 1 promoted, 4 ties, 2 worse, 1 leak check, 2 confirmations
+Tried: 11 runs after the baseline: the capstone model, 1 promoted, 4 ties, 2 worse, 1 leak check, 2 confirmations
 ```
 
 **What changed from the capstone's "tie":** the capstone judged one split with 9 test clients. Tested on all 29 clients, the plain model already leads the rule, but not reliably enough (19 of 30 fresh folds). Blending it with the rule makes the lead hold on every seed. The blend's edge over the plain model is real but small (+0.023 on fresh seeds) and not something to oversell.
@@ -41,4 +41,4 @@ Tried: 10 runs after the baseline, 1 promoted, 4 ties, 2 worse, 1 leak check, 2 
 
 **Still true from the capstone:** splitting by client matters more than model choice; AUC stays modest (0.63-0.64), so this is a better ordering of the top of the queue, not a page-level predictor; the 90-day totals overlap the label's windows, as in the capstone.
 
-**Next:** none planned. Any further gain needs a new signal, not more tuning: four tuning runs all tied.
+**Next:** none planned. Any further gain needs a new signal, not more tuning: the three tuning runs (#5, #6, #9) all tied.
