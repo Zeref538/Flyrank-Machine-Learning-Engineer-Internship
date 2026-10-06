@@ -729,6 +729,26 @@
     </p>
   </div>
 
+  <div class="note" id="follow-up">
+    <p class="kicker">Follow-up: tested on all 29 clients</p>
+    <p style="margin:0" data-mode="plain">
+      Nine test companies is not many, so after the capstone I re-tested every company in
+      turns. The model alone led the rule, but not reliably. Mixing the two, by averaging
+      each page's place in the rule's list and in the model's list, beat the rule every time
+      I re-shuffled the companies: 0.853 against 0.764 in the top 50, ahead in 25 of 30 rounds.
+      Inside one company, its top 10 was right <b>81%</b> of the time against the rule's <b>71%</b>.
+    </p>
+    <p style="margin:0" data-mode="expert">
+      5-fold GroupKFold on client_id over all 29 clients, pass mark written down before the
+      first run (ahead on every seed, 75% of folds won). A rank average of the rule and
+      gradient boosting was chosen on seeds 0-3 and confirmed on unseen seeds 4-9:
+      Precision@50 0.853 vs 0.764, ahead on all 6 seeds and in 25 of 30 folds; per-client P@10
+      0.811 vs 0.709. Plain gradient boosting won 19 of 30 and missed the mark. Twelve runs, one
+      change each, are logged in
+      <a href="https://github.com/Zeref538/Flyrank-Machine-Learning-Engineer-Internship/blob/main/experiments.md">experiments.md</a>.
+    </p>
+  </div>
+
     </div>
   </div>
 </div>
@@ -1128,7 +1148,8 @@ correlation 1.0000, rows matching 26,612 of 26,612</code></pre>
   <ul>
     <li><b>Nine held-out clients.</b> Enough to expose the split problem, too few to say
       how the ranking behaves across every industry FlyRank serves. That is why the
-      model's own interval runs from 0.60 to 0.92.</li>
+      model's own interval runs from 0.60 to 0.92. The <a href="#follow-up">follow-up</a>
+      re-tests on all 29.</li>
     <li><b>One snapshot, nobody assigned.</b> This can say "look at these first". It can
       never say "rewriting this will bring traffic back".</li>
     <li><b>The label is the dataset's definition of dropping</b>, not an independent

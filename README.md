@@ -15,6 +15,8 @@ anyone can read.
 **It does not.** Precision@50 of 0.880 against the rule's 0.860, with a bootstrap
 interval on the difference of **−0.260 to +0.140** — an interval containing zero.
 
+**Follow-up, after the capstone:** that verdict came from one split of 9 test clients. Re-tested on all 29 clients (5-fold client-grouped cross-validation, pass mark written before the first run), a rank average of the rule and the model beats the rule: Precision@50 0.853 vs 0.764 on 6 seeds never used while choosing, ahead on every seed and in 25 of 30 folds. The model alone won 19 of 30 and missed the mark. Twelve runs, one change each, are in [`experiments.md`](experiments.md); rerun any of them with `python work/improve.py <run>`.
+
 #### The four findings
 
 | | |

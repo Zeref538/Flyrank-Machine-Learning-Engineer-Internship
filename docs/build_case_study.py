@@ -140,6 +140,16 @@ def check(html, cap, sweep, gates, play, w05, did):
         (f"p = {did['placebo_p_value']:.3f}", "placebo p"),
         (f"<b>{did['treated_recovery_pct_of_baseline']:.0f}%</b>", "recovery"),
     ]
+    runs = {r["run"]: r for r in load("improve_runs.json")}
+    blend, rule2, gb2 = runs["blend_rule_gb@confirm"], runs["rule@confirm"], runs["gb_paper@confirm"]
+    assert all(v > 0 for v in blend["seed_means_minus_rule"]), "blend no longer ahead on every seed"
+    claims += [
+        (f"{blend['p50']:.3f} against {rule2['p50']:.3f}", "follow-up P@50"),
+        (f"ahead in {blend['folds_won']} of {blend['folds']} rounds", "follow-up folds"),
+        (f"<b>{blend['pc10']:.0%}</b> of the time against the rule's <b>{rule2['pc10']:.0%}</b>", "follow-up per-client"),
+        (f"{blend['pc10']:.3f} vs {rule2['pc10']:.3f}", "follow-up per-client exact"),
+        (f"won {gb2['folds_won']} of {gb2['folds']}", "follow-up plain model"),
+    ]
     missing = [f"{label} = {text!r}" for text, label in claims if text not in html]
     assert not missing, "page does not state:\n  " + "\n  ".join(missing)
     print(f"  checked {len(claims)} claims against work/outputs and the data")
